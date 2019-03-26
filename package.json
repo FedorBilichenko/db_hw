@@ -1,0 +1,23 @@
+{
+  "name": "db_hw",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "fastify": "^2.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FedorBilichenko/db_hw.git"
+  },
+  "author": "FedorBilichenko",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/FedorBilichenko/db_hw/issues"
+  },
+  "homepage": "https://github.com/FedorBilichenko/db_hw#readme"
+}
