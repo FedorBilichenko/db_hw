@@ -1,4 +1,5 @@
 const fastify = require('fastify');
+const userRouter = require('./routers/user');
 
 const app = fastify();
 
@@ -12,8 +13,13 @@ app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, 
     }
 });
 
-app.listen(5000);
+const routers = userRouter;
+console.log(routers);
+
+routers.forEach((router) => {
+   const { method, url, handler } = router;
+    app[method](`/api${url}`, handler);
+});
+
+app.listen(5000, '0.0.0.0');
 console.log('Listening 5000...');
-
-module.exports = app;
-

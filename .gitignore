@@ -1,3 +1,5 @@
 package-lock.json
 node_modules/
 .idea/
+report.html
+tech-db-forum
