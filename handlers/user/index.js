@@ -76,7 +76,7 @@ module.exports = {
             if ( curEmailUser.rowCount !== 0) {
                 res
                     .code(409)
-                    .send(`User with email ${email} is already signed up`);
+                    .send({message: `User with email ${email} is already signed up`});
                 return;
             }
         }

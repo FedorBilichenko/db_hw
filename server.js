@@ -15,7 +15,6 @@ app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, 
 });
 
 const routers = [...userRouter, ...forumRouter];
-console.log(routers);
 
 routers.forEach((router) => {
    const { method, url, handler } = router;

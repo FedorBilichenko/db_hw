@@ -23,7 +23,7 @@ class UserModel {
 
         const queryString = `SELECT * FROM users
                              WHERE ${selectors.join('')}`;
-        console.log(queryString);
+
         return await db.sendQuery(queryString);
     }
 
@@ -33,7 +33,7 @@ class UserModel {
         const queryString = `UPDATE users
                             SET ${selectors.join('')}
                             WHERE nickname='${nickname}';`;
-        console.log(queryString);
+
         return await db.sendQuery(queryString);
     }
 }

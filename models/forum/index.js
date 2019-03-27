@@ -8,7 +8,7 @@ class ForumModel {
 
         const queryString = `SELECT * FROM forums
                              WHERE ${selectors.join('')}`;
-        console.log(queryString);
+
         return await db.sendQuery(queryString);
     }
 

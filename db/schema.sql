@@ -2,18 +2,30 @@ CREATE EXTENSION IF NOT EXISTS citext;
 
 DROP TABLE IF EXISTS "users";
 DROP TABLE IF EXISTS forums;
+DROP TABLE IF EXISTS threads;
 
 CREATE TABLE "users" (
-  nickname   CITEXT     NOT NULL,
-  email      CITEXT     NOT NULL,
-  fullname   TEXT       NOT NULL,
-  about      TEXT       NOT NULL
+  nickname CITEXT NOT NULL,
+  email CITEXT NOT NULL,
+  fullname TEXT NOT NULL,
+  about TEXT NOT NULL
 );
 
 CREATE TABLE forums (
   slug CITEXT NOT NULL PRIMARY KEY,
   "user" CITEXT NOT NULL,
   title CITEXT  NOT NULL,
-  posts INT8 NOT NULL DEFAULT 0,
-  threads INT4 NOT NULL DEFAULT 0
+  posts INT NOT NULL DEFAULT 0,
+  threads INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE threads (
+  id SERIAL PRIMARY KEY,
+  author CITEXT NOT NULL,
+  created timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  forum CITEXT NOT NULL,
+  message TEXT NOT NULL,
+  slug CITEXT DEFAULT NULL,
+  title TEXT NOT NULL,
+  votes INT DEFAULT 0
 );
