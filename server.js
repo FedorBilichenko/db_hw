@@ -1,6 +1,7 @@
 const fastify = require('fastify');
 const userRouter = require('./routers/user');
 const forumRouter = require('./routers/forum');
+const threadRouter = require('./routers/thread');
 
 const app = fastify();
 
@@ -14,7 +15,11 @@ app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, 
     }
 });
 
-const routers = [...userRouter, ...forumRouter];
+const routers = [
+    ...userRouter,
+    ...forumRouter,
+    ...threadRouter,
+];
 
 routers.forEach((router) => {
    const { method, url, handler } = router;

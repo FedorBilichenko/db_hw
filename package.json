@@ -5,6 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "fastify": "^2.1.0",
+    "isnumber-js": "^1.0.8",
     "pg": "^7.9.0"
   },
   "devDependencies": {},

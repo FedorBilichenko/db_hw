@@ -1,4 +1,5 @@
 const db = require('../../db');
+const queryList = require('./queryList');
 
 
 class ThreadModel {
@@ -15,11 +16,9 @@ class ThreadModel {
         return await db.sendQuery(queryString);
     }
 
-    async get(data, sortData) {
-        console.log('data', data, 'sortData', sortData);
-
+    async get(data, sortData={}, operator) {
         const selectors = Object.keys(data).map((key, idx, array) =>
-            `${key}='${data[key]}' ${idx !== (array.length - 1) ? 'AND ' : ''}`);
+            `${key}='${data[key]}' ${idx !== (array.length - 1) ? `${operator} ` : ''}`);
         let descCondition = '', limitCondition='', sinceCondition='';
 
         if ('desc' in sortData) {
@@ -41,7 +40,8 @@ class ThreadModel {
         console.log(queryString);
 
         return await db.sendQuery(queryString);
-    }
+    };
+
 }
 
 module.exports = new ThreadModel();

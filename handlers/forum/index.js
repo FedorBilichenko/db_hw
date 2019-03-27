@@ -68,6 +68,24 @@ class ForumHandler {
                 .send({message: `Author or forum is not found`});
             return;
         }
+        const inputData = {};
+
+        if ('slug' in req.body) {
+            inputData['slug'] = req.body.slug;
+        }
+        if ('id' in req.body) {
+            inputData['id'] = req.body.id;
+        }
+        if (Object.keys(inputData).length !== 0) {
+            const curThreadResult = await ThreadModel.get(inputData, {}, 'OR');
+
+            if ( curThreadResult.rowCount !== 0) {
+                res
+                    .code(409)
+                    .send(curThreadResult.rows[0]);
+                return;
+            }
+        }
 
         const { slug: curSlugForum } = curForumResult.rows[0];
         const { nickname: curAuthor } = curAuthorResult.rows[0];
@@ -95,7 +113,7 @@ class ForumHandler {
             return;
         }
 
-        const threadsResult = await ThreadModel.get({forum: reqForumSLug}, req.query);
+        const threadsResult = await ThreadModel.get({forum: reqForumSLug}, req.query, 'AND');
 
         res
             .code(200)

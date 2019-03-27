@@ -29,3 +29,20 @@ CREATE TABLE threads (
   title TEXT NOT NULL,
   votes INT DEFAULT 0
 );
+
+CREATE TABLE posts (
+  id SERIAL PRIMARY KEY,
+  parent INT NOT NULL DEFAULT 0,
+  author CITEXT NOT NULL,
+  created timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  forum CITEXT NOT NULL,
+  "isEdited" BOOLEAN NOT NULL DEFAULT FALSE,
+  message TEXT NOT NULL,
+  thread INT NOT NULL
+);
+
+CREATE TABLE votes (
+  "user" CITEXT NOT NULL,
+  thread INT NOT NULL,
+  voice INT NOT NULL DEFAULT 0
+);
