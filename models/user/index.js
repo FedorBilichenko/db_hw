@@ -1,7 +1,7 @@
 const db = require('../../db');
 const queryList = require('./queryList');
 
-class User {
+class UserModel {
     async create(data) {
         const {
             nickname,
@@ -24,7 +24,7 @@ class User {
         const queryString = `SELECT * FROM users
                              WHERE ${selectors.join('')}`;
         console.log(queryString);
-        return await db.sendQuery(queryString, []);
+        return await db.sendQuery(queryString);
     }
 
     async update(data, nickname) {
@@ -34,8 +34,8 @@ class User {
                             SET ${selectors.join('')}
                             WHERE nickname='${nickname}';`;
         console.log(queryString);
-        return await db.sendQuery(queryString, []);
+        return await db.sendQuery(queryString);
     }
 }
 
-module.exports = new User();
+module.exports = new UserModel();

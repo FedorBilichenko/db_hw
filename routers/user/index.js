@@ -1,8 +1,9 @@
 const handlers = require('../../handlers/user');
+const prefix = '/user';
 
 module.exports = [
-    {method: 'post', url: '/user/:nickname/create', handler: handlers.create},
-    {method: 'get', url: '/user/:nickname/profile', handler: handlers.get},
-    {method: 'post', url: '/user/:nickname/profile', handler: handlers.update}
+    {method: 'post', url: `${prefix}/:nickname/create`, handler: handlers.create},
+    {method: 'get', url: `${prefix}/:nickname/profile`, handler: handlers.get},
+    {method: 'post', url: `${prefix}/:nickname/profile`, handler: handlers.update}
 ];
 

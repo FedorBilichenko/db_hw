@@ -11,7 +11,7 @@ class Db {
         })
     }
 
-    async sendQuery(query, values) {
+    async sendQuery(query, values=[]) {
         const client = await this.pool.connect();
         const result = await client.query(query, values);
 
