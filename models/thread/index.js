@@ -37,11 +37,24 @@ class ThreadModel {
                              WHERE ${selectors.join('')}
                              ${sinceCondition} ORDER BY created ${descCondition} ${limitCondition}`;
 
-        console.log(queryString);
-
         return await db.sendQuery(queryString);
     };
 
+    async vote({id, voice}) {
+        return await db.sendQuery(queryList.updateVote, [voice, id]);
+    }
+
+    async update(data, id) {
+        const selectors = Object.keys(data).map(key =>
+            `${key}='${data[key]}'`
+        );
+        const queryString = `UPDATE threads
+        SET ${selectors.join(', ')}
+        WHERE id='${id}'
+        RETURNING *;`;
+
+        return await db.sendQuery(queryString);
+    }
 }
 
 module.exports = new ThreadModel();

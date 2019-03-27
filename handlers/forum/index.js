@@ -95,6 +95,8 @@ class ForumHandler {
             ...{forum: curSlugForum, author: curAuthor}
         });
 
+        await ForumModel.update({threads: 1}, curSlugForum);
+
         res
             .code(201)
             .send(newThreadResult.rows[0]);

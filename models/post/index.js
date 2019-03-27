@@ -11,7 +11,6 @@ class PostModel {
         const queryString = `INSERT INTO posts (${columns.join('')})
                             VALUES (${values.join(', ')})
                             RETURNING *;`;
-
         return await db.sendQuery(queryString);
     }
 

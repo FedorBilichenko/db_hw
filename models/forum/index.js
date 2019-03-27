@@ -17,6 +17,18 @@ class ForumModel {
 
         return await db.sendQuery(queryList.insertForum, [slug, user, title]);
     }
+
+    async update(data, slug) {
+        const selectors = Object.keys(data).map(key =>
+            `${key}=${key}+${data[key]}`
+        );
+        const queryString = `UPDATE forums
+        SET ${selectors.join(', ')}
+        WHERE slug='${slug}'
+        RETURNING *;`;
+
+        return await db.sendQuery(queryString);
+    }
 }
 
 module.exports = new ForumModel();
