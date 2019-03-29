@@ -1,17 +1,19 @@
-const fastify = require('fastify');
+const fastify = require('fastify')({
+    logger: false,
+});
 const userRouter = require('./routers/user');
 const forumRouter = require('./routers/forum');
 const threadRouter = require('./routers/thread');
+const postRouter = require('./routers/post');
+const serviceRouter = require('./routers/service');
 
-const app = fastify();
+// const app = fastify();
 
-app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
-    try {
-        const json = JSON.parse(body);
-        done(null, json);
-    } catch (err) {
-        err.statusCode = 400;
-        done(err, undefined)
+fastify.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
+    if (body.length > 0) {
+        done(null, JSON.parse(body));
+    } else {
+        done(null, {});
     }
 });
 
@@ -19,12 +21,14 @@ const routers = [
     ...userRouter,
     ...forumRouter,
     ...threadRouter,
+    ...postRouter,
+    ...serviceRouter,
 ];
 
 routers.forEach((router) => {
    const { method, url, handler } = router;
-    app[method](`/api${url}`, handler);
+    fastify[method](`/api${url}`, handler);
 });
 
-app.listen(5000, '0.0.0.0');
+fastify.listen(5000, '0.0.0.0');
 console.log('Listening 5000...');

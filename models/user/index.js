@@ -13,16 +13,26 @@ class UserModel {
         return await db.sendQuery(queryList.insertUser, [nickname, fullname, email, about]);
     }
 
-    async getProfiles({ nickname, email }) {
-        return await db.sendQuery(queryList.selectByNickOrEmail, [nickname, email]);
-    }
-
-    async getProfile(data) {
+    async getProfile({data, sortData={}, operator}) {
         const selectors = Object.keys(data).map((key, idx, array) =>
-            `${key}='${data[key]}' ${idx !== (array.length - 1) ? 'AND ' : ''}`);
+            `${key}='${data[key]}' ${idx !== (array.length - 1) ? `${operator} ` : ''}`);
+        let descCondition = '', limitCondition='', sinceCondition='';
 
-        const queryString = `SELECT * FROM users
-                             WHERE ${selectors.join('')}`;
+        if ('desc' in sortData) {
+            descCondition = sortData.desc === 'true' ? 'DESC' : '';
+        }
+
+        if ('since' in sortData) {
+            sinceCondition = `AND nickname${sortData.desc === 'true' ? '<' : '>'}'${sortData.since}'`;
+        }
+
+        if ('limit' in sortData) {
+            limitCondition = `LIMIT ${sortData.limit}`;
+        }
+
+        const queryString = `SELECT * FROM "users"
+                             WHERE ${selectors.join('')}
+                             ${sinceCondition} ORDER BY nickname ${descCondition} ${limitCondition}`;
 
         return await db.sendQuery(queryString);
     }

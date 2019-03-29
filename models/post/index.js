@@ -1,5 +1,5 @@
 const db = require('../../db');
-
+const queryList = require('./queryList');
 
 class PostModel {
     async create(data) {
@@ -24,6 +24,9 @@ class PostModel {
         return await db.sendQuery(queryString);
     }
 
+    async update({message, id}) {
+        return await db.sendQuery(queryList.updatePost, [message, id])
+    }
 }
 
 module.exports = new PostModel();

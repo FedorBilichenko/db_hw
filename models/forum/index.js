@@ -29,6 +29,7 @@ class ForumModel {
 
         return await db.sendQuery(queryString);
     }
+
 }
 
 module.exports = new ForumModel();

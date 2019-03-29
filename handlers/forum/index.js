@@ -1,6 +1,7 @@
 const ForumModel = require('../../models/forum');
 const UserModel = require('../../models/user');
 const ThreadModel = require('../../models/thread');
+const CommonQueries = require('../../utils/commonQueries');
 
 class ForumHandler {
     async create(req, res) {
@@ -10,7 +11,9 @@ class ForumHandler {
             title
         } = req.body;
 
-        const curUserResult = await UserModel.getProfile({nickname: reqUser});
+        const curUserResult = await UserModel.getProfile({
+            data: {nickname: reqUser}
+        });
 
         if (curUserResult.rowCount === 0) {
             res
@@ -59,7 +62,9 @@ class ForumHandler {
         const { slug: reqSlugForum } = req.params;
         const { author: reqAuthor } = req.body;
 
-        const curAuthorResult = await UserModel.getProfile({nickname: reqAuthor});
+        const curAuthorResult = await UserModel.getProfile({
+            data: {nickname: reqAuthor}
+        });
         const curForumResult = await ForumModel.get({slug: reqSlugForum});
 
         if (curForumResult.rowCount === 0 || curAuthorResult.rowCount === 0) {
@@ -77,7 +82,10 @@ class ForumHandler {
             inputData['id'] = req.body.id;
         }
         if (Object.keys(inputData).length !== 0) {
-            const curThreadResult = await ThreadModel.get(inputData, {}, 'OR');
+            const curThreadResult = await ThreadModel.get({
+                data: inputData,
+                operator: 'OR'
+            });
 
             if ( curThreadResult.rowCount !== 0) {
                 res
@@ -96,6 +104,20 @@ class ForumHandler {
         });
 
         await ForumModel.update({threads: 1}, curSlugForum);
+        const curUserForumResult = await CommonQueries.selectUserForum({
+            data: {
+                user: curAuthor,
+                forum: curSlugForum
+            }
+        });
+        if (curUserForumResult.rowCount === 0) {
+            await CommonQueries.insertUserForum({
+                data: {
+                    user: curAuthor,
+                    forum: curSlugForum
+                }
+            })
+        }
 
         res
             .code(201)
@@ -115,11 +137,42 @@ class ForumHandler {
             return;
         }
 
-        const threadsResult = await ThreadModel.get({forum: reqForumSLug}, req.query, 'AND');
+        const threadsResult = await ThreadModel.get({
+            data: {forum: reqForumSLug},
+            sortData: req.query,
+            operator: 'AND'
+        });
 
         res
             .code(200)
             .send(threadsResult.rows)
+    }
+
+    async getUsers(req, res) {
+        const { slug: reqSLug } = req.params;
+
+        const curForumResult = await ForumModel.get({slug: reqSLug});
+
+        if (curForumResult.rowCount === 0) {
+            res
+                .code(404)
+                .send({message: `Can't find forum with slug ${reqSLug}`});
+            return;
+        }
+        const { slug } = curForumResult.rows[0];
+
+        const forumUsersResult = await CommonQueries.getForumUsers({
+            data: {
+                forum: slug
+            },
+            sortData: req.query,
+            operator: 'AND',
+        });
+
+        res
+            .code(200)
+            .send(forumUsersResult.rows)
+
     }
 }
 

@@ -16,7 +16,8 @@ class ThreadModel {
         return await db.sendQuery(queryString);
     }
 
-    async get(data, sortData={}, operator) {
+    async get({data, sortData={}, operator}) {
+
         const selectors = Object.keys(data).map((key, idx, array) =>
             `${key}='${data[key]}' ${idx !== (array.length - 1) ? `${operator} ` : ''}`);
         let descCondition = '', limitCondition='', sinceCondition='';
