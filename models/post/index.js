@@ -5,12 +5,17 @@ class PostModel {
     async create(data) {
         const values = [];
         const columns = Object.keys(data).map((key, idx, array) => {
-            values.push(`'${data[key]}'`);
+            if (key === 'path') {
+                values.push(`'{${data[key]}}'::INT[]`);
+            } else {
+                values.push(`'${data[key]}'`);
+            }
             return idx === (array.length - 1) ? `${key}` : `${key}, `
         });
         const queryString = `INSERT INTO posts (${columns.join('')})
                             VALUES (${values.join(', ')})
                             RETURNING *;`;
+
         return await db.sendQuery(queryString);
     }
 
@@ -27,6 +32,7 @@ class PostModel {
     async update({message, id}) {
         return await db.sendQuery(queryList.updatePost, [message, id])
     }
+
 }
 
 module.exports = new PostModel();

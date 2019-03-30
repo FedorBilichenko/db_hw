@@ -41,9 +41,12 @@ class ThreadHandler {
 
         const {id: threadId, forum: forumSlug} = curThreadResult.rows[0];
 
+        const sameTime = new Date().toISOString();
+
         for (let i = 0; i < posts.length; i++) {
             let post = posts[i];
             const { parent, author } = post;
+            let path = [];
 
             if (('parent' in post) && (parent !== 0 )) {
                 const parentResult = await PostsModel.get({id: parent, thread: threadId});
@@ -54,6 +57,7 @@ class ThreadHandler {
                         .send({message: `Can't find parent post with id ${parent} into thread with id ${threadId}`});
                     return;
                 }
+                path = parentResult.rows[0].path;
             }
 
             const curAuthorResult = await UserModel.getProfile({
@@ -68,12 +72,24 @@ class ThreadHandler {
             }
             const { nickname } = curAuthorResult.rows[0];
 
+/*            let curCreated;
+            if (!('created' in post)) {
+                curCreated = new Date().toISOString();
+            } else {
+                curCreated = post.created;
+            }*/
+            const nextId = await CommonQueries.getNextId();
+            const { nextval: id } = nextId.rows[0];
+            path.push(+id);
+
             const curPostResult = await PostsModel.create({
                 ...post,
                 ...{
+                    id: id,
                     thread: threadId,
                     forum: forumSlug,
-                    created: new Date(),
+                    created: sameTime,
+                    path: path,
                 }
             });
 
@@ -91,8 +107,8 @@ class ThreadHandler {
                     }
                 })
             }
-            const { created } = curPostResult.rows[0];
-            curPostResult.rows[0].created = new Date(created);
+            /*const { created } = curPostResult.rows[0];
+            curPostResult.rows[0].created = new Date(created);*/
 
             resultArrPosts.push({
                 ...curPostResult.rows[0],
@@ -225,6 +241,41 @@ class ThreadHandler {
             .code(200)
             .send(updatedThreadResult.rows[0])
 
+    }
+
+    async getPosts(req, res) {
+        const { slug_or_id: reqSlugOrId} = req.params;
+
+        let curThreadResult;
+        if (isNumber(reqSlugOrId)) {
+            curThreadResult = await ThreadModel.get({
+                data: {id: reqSlugOrId, slug: reqSlugOrId},
+                operator: 'OR',
+            });
+        } else {
+            curThreadResult = await ThreadModel.get({
+                data: {slug: reqSlugOrId}
+            });
+        }
+
+        if (curThreadResult.rowCount === 0) {
+            res
+                .code(404)
+                .send({message: `Can't find thread with slug or id ${reqSlugOrId}`});
+            return;
+        }
+        const { id: thread } = curThreadResult.rows[0];
+
+        const postsResult = await CommonQueries.getPostsThread({
+            data: {
+                thread: thread
+            },
+            sortData: req.query,
+        });
+
+        res
+            .code(200)
+            .send(postsResult.rows)
     }
 }
 

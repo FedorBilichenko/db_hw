@@ -12,7 +12,6 @@ class ThreadModel {
         const queryString = `INSERT INTO threads (${columns.join('')})
                             VALUES (${values.join(', ')})
                             RETURNING *;`;
-
         return await db.sendQuery(queryString);
     }
 

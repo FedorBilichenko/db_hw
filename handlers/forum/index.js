@@ -98,9 +98,20 @@ class ForumHandler {
         const { slug: curSlugForum } = curForumResult.rows[0];
         const { nickname: curAuthor } = curAuthorResult.rows[0];
 
+        let curCreated;
+/*        if (!('created' in req.body)) {
+            curCreated = new Date().toISOString();
+        } else {
+            curCreated = req.body.created;
+        }*/
+
         const newThreadResult = await ThreadModel.create({
             ...req.body,
-            ...{forum: curSlugForum, author: curAuthor}
+            ...{
+                forum: curSlugForum,
+                author: curAuthor,
+                // created: curCreated,
+            }
         });
 
         await ForumModel.update({threads: 1}, curSlugForum);
@@ -118,7 +129,8 @@ class ForumHandler {
                 }
             })
         }
-
+        /*const { created } = newThreadResult.rows[0];
+        newThreadResult.rows[0].created = new Date(created);*/
         res
             .code(201)
             .send(newThreadResult.rows[0]);

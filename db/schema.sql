@@ -41,7 +41,8 @@ CREATE TABLE posts (
   forum CITEXT NOT NULL,
   "isEdited" BOOLEAN NOT NULL DEFAULT FALSE,
   message TEXT NOT NULL,
-  thread INT NOT NULL
+  thread INT NOT NULL,
+  path INTEGER[]
 );
 
 CREATE TABLE votes (
