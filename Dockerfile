@@ -14,7 +14,6 @@ COPY ./ /usr/src/app
 USER postgres
 RUN /etc/init.d/postgresql start &&\
   psql --command "CREATE USER bilichenkofv WITH SUPERUSER PASSWORD 'Klass575428';" &&\
-  createdb -O bilichenkofv technopark &&\
   psql < /usr/src/app/db/schema.sql &&\
   /etc/init.d/postgresql stop
 

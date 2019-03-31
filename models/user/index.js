@@ -33,14 +33,15 @@ class UserModel {
         const queryString = `SELECT * FROM "users"
                              WHERE ${selectors.join('')}
                              ${sinceCondition} ORDER BY nickname ${descCondition} ${limitCondition}`;
-
+        // console.log((await db.sendQuery('SELECT * FROM pg_catalog.pg_tables;')).rows);
+        console.log(queryString);
         return await db.sendQuery(queryString);
     }
 
     async update(data, nickname) {
         const selectors = Object.keys(data).map((key, idx, array) =>
             `${key}='${data[key]}' ${idx !== (array.length - 1) ? ', ' : ' '}`);
-        const queryString = `UPDATE users
+        const queryString = `UPDATE "users"
                             SET ${selectors.join('')}
                             WHERE nickname='${nickname}';`;
 

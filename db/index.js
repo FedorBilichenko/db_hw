@@ -4,8 +4,8 @@ class Db {
     constructor() {
         this.pool = new Pool({
             user: 'bilichenkofv',
-            host: '127.0.0.1',
-            database: 'technopark',
+            host: 'localhost',
+            database: 'postgres',
             password: 'Klass575428',
             port: 5432,
         })

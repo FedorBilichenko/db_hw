@@ -60,93 +60,91 @@ class CommonQueries {
             case 'tree': {
                 if ('since' in sortData) {
                     if ('desc' in sortData && sortData.desc === 'true') {
-                        sinceCondition =  ` JOIN posts Pfilter ON Pfilter.id = $2
-                                            WHERE P.thread=$1 AND P.path<Pfilter.path`;
+                        sinceCondition =  `JOIN posts P1 ON P1.id = $2
+                                            WHERE P.thread=$1 AND P.path<P1.path`;
                     } else {
-                        sinceCondition =  ` JOIN posts Pfilter ON Pfilter.id = $2
-                                            WHERE P.thread=$1 AND P.path>Pfilter.path`;
+                        sinceCondition =  `JOIN posts P1 ON P1.id = $2
+                                            WHERE P.thread=$1 AND P.path>P1.path`;
                     }
                     values.push(sortData.since);
                 } else {
-                    sinceCondition = ` WHERE P.thread=$1`;
+                    sinceCondition = `WHERE P.thread=$1`;
                 }
 
                 if ('desc' in sortData && sortData.desc === 'true') {
-                    descCondition = ` ORDER BY P.path DESC`;
+                    descCondition = `ORDER BY P.path DESC`;
                 } else {
-                    descCondition = ` ORDER BY P.path`;
+                    descCondition = `ORDER BY P.path`;
                 }
 
                 if ('limit' in sortData) {
                     if ('since' in sortData) {
-                        limitCondition = ` LIMIT $3`;
+                        limitCondition = `LIMIT $3`;
                     } else {
-                        limitCondition = ` LIMIT $2`;
+                        limitCondition = `LIMIT $2`;
                     }
                     values.push(sortData.limit)
                 }
-                sortTypeCondition += sinceCondition + descCondition + limitCondition;
+                sortTypeCondition = ` ${sinceCondition} ${descCondition} ${limitCondition}`;
                 break;
             }
             case 'parent_tree': {
-                sortTypeCondition = ` WHERE P.path[1] IN (SELECT Pfilter.id FROM posts Pfilter`;
                 if ('since' in sortData) {
                     if ('desc' in sortData && sortData.desc === 'true') {
-                        sinceCondition = ` JOIN posts Pedge ON Pedge.id = $2
-                                            WHERE Pfilter.thread = $1 AND Pfilter.parent = 0 AND Pfilter.id < Pedge.path[1]`;
+                        sinceCondition = `JOIN posts P2 ON P2.id = $2
+                                            WHERE P1.thread = $1 AND P1.parent = 0 AND P1.id < P2.path[1]`;
                     } else {
-                        sinceCondition = ` JOIN posts Pedge ON Pedge.id = $2
-                                            WHERE Pfilter.thread = $1 AND Pfilter.parent = 0 AND Pfilter.id > Pedge.path[1]`;
+                        sinceCondition = `JOIN posts P2 ON P2.id = $2
+                                            WHERE P1.thread = $1 AND P1.parent = 0 AND P1.id > P2.path[1]`;
                     }
                     values.push(sortData.since);
                 } else {
-                    sinceCondition = ` WHERE Pfilter.thread = $1 AND Pfilter.parent = 0`;
+                    sinceCondition = `WHERE P1.thread = $1 AND P1.parent = 0`;
                 }
                 if ('desc' in sortData && sortData.desc === 'true') {
-                    descCondition = ` ORDER BY Pfilter.id DESC`;
+                    descCondition = `ORDER BY P1.id DESC`;
                 } else {
-                    descCondition = ` ORDER BY Pfilter.id`;
+                    descCondition = `ORDER BY P1.id`;
                 }
                 if ('limit' in sortData) {
                     if ('since' in sortData) {
-                        limitCondition += ` LIMIT $3`;
+                        limitCondition += `LIMIT $3`;
                     } else {
-                        limitCondition += ` LIMIT $2`;
+                        limitCondition += `LIMIT $2`;
                     }
                     values.push(sortData.limit);
                 }
-                sortTypeCondition += sinceCondition + descCondition + limitCondition;
-                if ('desc' in sortData && sortData.desc === 'true') {
-                    sortTypeCondition += ` ) ORDER BY P.path[1] DESC, path`;
-                } else {
-                    sortTypeCondition += ` ) ORDER BY P.path`;
-                }
+                sortTypeCondition = ` WHERE P.path[1] IN
+                (SELECT P1.id FROM posts P1
+                ${sinceCondition} 
+                ${descCondition}
+                ${limitCondition}
+                ${'desc' in sortData && sortData.desc === 'true' ? `) ORDER BY P.path[1] DESC, path` : `) ORDER BY P.path`}`;
                 break;
             }
             default: {
-                sortTypeCondition = ` WHERE P.thread = $1`;
                 if ('since' in sortData) {
                     if ('desc' in sortData && sortData.desc === 'true') {
-                        sinceCondition = ` AND P.id < $2`;
+                        sinceCondition = `AND P.id < $2`;
                     } else {
-                        sinceCondition = ` AND P.id > $2`;
+                        sinceCondition = `AND P.id > $2`;
                     }
                     values.push(sortData.since);
                 }
                 if ('desc' in sortData && sortData.desc === 'true') {
-                    descCondition = ` ORDER BY P.id DESC`;
+                    descCondition = `ORDER BY P.id DESC`;
                 } else {
-                    descCondition = ` ORDER BY P.id ASC`;
+                    descCondition = `ORDER BY P.id ASC`;
                 }
                 if ('limit' in sortData) {
                     if ('since' in sortData) {
-                        limitCondition += ` LIMIT $3`;
+                        limitCondition += `LIMIT $3`;
                     } else {
-                        limitCondition += ` LIMIT $2`;
+                        limitCondition += `LIMIT $2`;
                     }
                     values.push(sortData.limit);
                 }
-                sortTypeCondition += sinceCondition + descCondition + limitCondition;
+                sortTypeCondition =` WHERE P.thread = $1 ${sinceCondition} ${descCondition} ${limitCondition}`;
             }
         }
         queryString += sortTypeCondition;
