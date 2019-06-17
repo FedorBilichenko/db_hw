@@ -8,7 +8,7 @@ class PostModel {
         let counter = 1;
         const values = [threadId];
 
-        for (let i = 0; i < posts.length - 1; i++) {
+        for (let i = 0; i < posts.length; i++) {
             const post = posts[i];
 
             const parent = post.parent ?
@@ -70,8 +70,6 @@ class PostModel {
             text: queryString,
             values,
         };
-
-        console.log('query:', query, 'values:', values);
 
         return await db.sendQuery(query);
     }

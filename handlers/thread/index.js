@@ -42,8 +42,6 @@ class ThreadHandler {
 
         const { error, data: createdPosts } = await PostsModel.createPosts({posts, forum: forumSlug, threadId});
 
-        console.log(createdPosts);
-
         if (error) {
             if (error.code === '23502') {
                 res
@@ -142,7 +140,7 @@ class ThreadHandler {
 
         res
             .code(200)
-            .send(curThreadResult.rows[0])
+            .send(curThreadResult[0])
     }
 
     async update(req, res) {
