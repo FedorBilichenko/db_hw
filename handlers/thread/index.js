@@ -1,9 +1,7 @@
 const isNumber = require('isnumber-js');
 const PostsModel = require('../../models/post');
 const ThreadModel = require('../../models/thread');
-const ForumModel = require('../../models/forum');
 const VoteModel = require('../../models/vote');
-const UserModel = require('../../models/user');
 const CommonQueries = require('../../utils/commonQueries');
 
 
@@ -66,15 +64,16 @@ class ThreadHandler {
     async vote(req, res) {
         const { slug_or_id: slugOrId} = req.params;
         let { nickname, voice } = req.body;
-
-        const { data: curVoteResult }= await VoteModel.get({user: nickname, slugOrId});
+        console.log('here');
+        const { data: curVoteResult, error: error1 } = await VoteModel.get({user: nickname, slugOrId});
+        console.log('here1');
         const { error } = await VoteModel.addOrUpdate({user: nickname, voice, slugOrId});
-
+        console.log('here2');
         if (error) {
             if (error.code === '23502') {
                 res
                     .code(404)
-                    .send({message: `Can't find thread with id or slug ${slugOrId}`})
+                    .send({message: `Can't find thread with id or slug ${slugOrId}`});
                 return;
             }
             if (error.code === '23503') {
@@ -84,16 +83,18 @@ class ThreadHandler {
                 return;
             }
         }
-
-        console.log('finalThread', curVoteResult[0]);
+        console.log('here3');
+        console.log('finalThread error', error1);
+        console.log('finalThread', curVoteResult);
 
         if (curVoteResult.length !== 0) {
             voice -= curVoteResult[0].vote;
         }
+        console.log('here4');
 
-
-        const { data: finalThread } = await ThreadModel.vote({slugOrId, voice: voice});
+        const { data: finalThread } = await ThreadModel.vote({slugOrId, voice});
         console.log('finalThread', finalThread[0]);
+        console.log('here5');
         res
             .code(200)
             .send(finalThread[0]);
@@ -129,39 +130,37 @@ class ThreadHandler {
     async update(req, res) {
         const { slug_or_id: reqSlugOrId } = req.params;
 
-        let curThreadResult;
-        if (isNumber(reqSlugOrId)) {
-            curThreadResult = await ThreadModel.get({
-                data: {id: reqSlugOrId, slug: reqSlugOrId},
-                operator: 'OR',
-            });
-        } else {
-            curThreadResult = await ThreadModel.get({
-                data: {slug: reqSlugOrId},
-            });
-        }
-
-        if (curThreadResult.rowCount === 0) {
-            res
-                .code(404)
-                .send({message: `Can't find thread with slug or id ${reqSlugOrId}`});
-            return;
-        }
-
         if (Object.keys(req.body).length === 0) {
+            let curThreadResult;
+            if (isNumber(reqSlugOrId)) {
+                curThreadResult = await ThreadModel.get({
+                    data: {id: reqSlugOrId, slug: reqSlugOrId},
+                    operator: 'OR',
+                });
+            } else {
+                curThreadResult = await ThreadModel.get({
+                    data: {slug: reqSlugOrId},
+                });
+            }
+
+            if (curThreadResult.data.length === 0) {
+                res
+                    .code(404)
+                    .send({message: `Can't find thread with slug or id ${reqSlugOrId}`});
+                return;
+            }
+
             res
                 .code(200)
-                .send(curThreadResult.rows[0]);
+                .send(curThreadResult.data[0]);
             return;
         }
 
-        const { id } = curThreadResult.rows[0];
-
-        const updatedThreadResult = await ThreadModel.update(req.body, id);
+        const { data: updatedThreadResult } = await ThreadModel.update(req.body, reqSlugOrId);
 
         res
             .code(200)
-            .send(updatedThreadResult.rows[0])
+            .send(updatedThreadResult[0])
 
     }
 

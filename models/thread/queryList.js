@@ -1,9 +1,13 @@
 module.exports = {
     selectByNickOrEmail: `SELECT * FROM threads
                           WHERE id=$1 OR slug=$2;`,
-    updateVote: `UPDATE threads
+    updateVoteById: `UPDATE threads
                  SET votes=votes+$1
-                 WHERE id=$2 OR slug=$2
+                 WHERE id=$2
+                 RETURNING *;`,
+    updateVoteBySlug: `UPDATE threads
+                 SET votes=votes+$1
+                 WHERE slug=$2
                  RETURNING *;`,
 
 };

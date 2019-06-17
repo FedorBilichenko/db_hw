@@ -5,19 +5,23 @@ const queryList = require('./queryList');
 class VoteModel {
     async addOrUpdate({user, slugOrId, voice}) {
         const query = {
-            name: 'update_vote',
-            text: queryList.updateVote,
-            values: [user, slugOrId, voice],
+            // name: 'update_vote',
+            text: Number.isInteger(Number(slugOrId))
+                ? queryList.updateVoteById
+                : queryList.updateVoteBySlug,
+            values: [user, slugOrId, voice, voice],
         };
 
         return await db.sendQuery(query);
     }
 
-    async get({user, thread}) {
+    async get({user, slugOrId}) {
         const query = {
-            name: 'get_vote',
-            text: queryList.selectVote,
-            values: [user, thread],
+            // name: 'get_vote',
+            text: Number.isInteger(Number(slugOrId))
+                ? queryList.selectVoteById
+                : queryList.selectVoteBySlug,
+            values: [user, slugOrId],
         };
 
         return await db.sendQuery(query);

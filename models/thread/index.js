@@ -52,22 +52,24 @@ class ThreadModel {
         return await db.sendQuery(query);
     };
 
-    async vote({id: slugOrId, voice}) {
+    async vote({slugOrId, voice}) {
         const query = {
-            name: 'vote_thread',
-            text: queryList.updateVote,
+            // name: 'vote_thread',
+            text: Number.isInteger(Number(slugOrId))
+                ? queryList.updateVoteById
+                : queryList.updateVoteBySlug,
             values: [voice, slugOrId],
         };
         return await db.sendQuery(query);
     }
 
-    async update(data, id) {
+    async update(data, reqSlugOrId) {
         const selectors = Object.keys(data).map(key =>
             `${key}='${data[key]}'`
         );
         const queryString = `UPDATE threads
         SET ${selectors.join(', ')}
-        WHERE id='${id}'
+        WHERE ${Number.isInteger(Number(reqSlugOrId)) ? 'id' : 'slug'}='${reqSlugOrId}'
         RETURNING *;`;
 
         const query = {
