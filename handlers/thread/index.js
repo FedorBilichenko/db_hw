@@ -158,6 +158,13 @@ class ThreadHandler {
 
         const { data: updatedThreadResult } = await ThreadModel.update(req.body, reqSlugOrId);
 
+        if (updatedThreadResult.length === 0) {
+            res
+                .code(404)
+                .send({message: `Cant't find thread`});
+            return;
+        }
+
         res
             .code(200)
             .send(updatedThreadResult[0])
