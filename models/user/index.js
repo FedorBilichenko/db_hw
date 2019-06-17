@@ -3,15 +3,26 @@ const queryList = require('./queryList');
 
 class UserModel {
     async create(data) {
-        const {
-            nickname,
-            fullname,
-            email,
-            about,
-        } = data;
+        const query = {
+            text: queryList.insertUser,
+            values: [data.nickname, data.fullname, data.email, data.about],
+            name: 'create_user',
+        };
+        const { error } = await db.sendQuery(query);
 
-        return await db.sendQuery(queryList.insertUser, [nickname, fullname, email, about]);
+        return {error, data}
     }
+
+    async getUserByNickEmail (data) {
+        const query = {
+            text: queryList.selectByNickOrEmail,
+            values: [data.nickname, data.email],
+            name: 'get_user_by_nick_or_email',
+        };
+
+        return await db.sendQuery(query);
+    }
+
 
     async getProfile({data, sortData={}, operator}) {
         const selectors = Object.keys(data).map((key, idx, array) =>
@@ -34,8 +45,11 @@ class UserModel {
                              WHERE ${selectors.join('')}
                              ${sinceCondition} ORDER BY nickname ${descCondition} ${limitCondition}`;
         // console.log((await db.sendQuery('SELECT * FROM pg_catalog.pg_tables;')).rows);
-        console.log(queryString);
-        return await db.sendQuery(queryString);
+        const query = {
+            text: queryString,
+        };
+
+        return await db.sendQuery(query);
     }
 
     async update(data, nickname) {
@@ -45,7 +59,11 @@ class UserModel {
                             SET ${selectors.join('')}
                             WHERE nickname='${nickname}';`;
 
-        return await db.sendQuery(queryString);
+        const query = {
+            text: queryString,
+        };
+
+        return await db.sendQuery(query);
     }
 }
 

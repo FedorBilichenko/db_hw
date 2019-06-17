@@ -9,13 +9,22 @@ class ForumModel {
         const queryString = `SELECT * FROM forums
                              WHERE ${selectors.join('')}`;
 
-        return await db.sendQuery(queryString);
+        const query = {
+            text: queryString
+        };
+
+        return await db.sendQuery(query);
     }
 
     async create(data) {
         const { slug, user, title } = data;
+        const query = {
+            text: queryList.insertForum,
+            values: [slug, user, title],
+            name: 'forum_create',
+        };
 
-        return await db.sendQuery(queryList.insertForum, [slug, user, title]);
+        return await db.sendQuery(query);
     }
 
     async update(data, slug) {
@@ -27,7 +36,10 @@ class ForumModel {
         WHERE slug='${slug}'
         RETURNING *;`;
 
-        return await db.sendQuery(queryString);
+        const query = {
+            text: queryString,
+        };
+        return await db.sendQuery(query);
     }
 
 }

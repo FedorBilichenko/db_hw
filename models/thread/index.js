@@ -12,7 +12,11 @@ class ThreadModel {
         const queryString = `INSERT INTO threads (${columns.join('')})
                             VALUES (${values.join(', ')})
                             RETURNING *;`;
-        return await db.sendQuery(queryString);
+        const query = {
+            text: queryString,
+        };
+
+        return await db.sendQuery(query);
     }
 
     async get({data, sortData={}, operator}) {
@@ -37,11 +41,20 @@ class ThreadModel {
                              WHERE ${selectors.join('')}
                              ${sinceCondition} ORDER BY created ${descCondition} ${limitCondition}`;
 
-        return await db.sendQuery(queryString);
+        const query = {
+            text: queryString,
+        };
+
+        return await db.sendQuery(query);
     };
 
     async vote({id, voice}) {
-        return await db.sendQuery(queryList.updateVote, [voice, id]);
+        const query = {
+            name: 'vote_thread',
+            text: queryList.updateVote,
+            values: [voice, id],
+        };
+        return await db.sendQuery(query);
     }
 
     async update(data, id) {
@@ -53,7 +66,11 @@ class ThreadModel {
         WHERE id='${id}'
         RETURNING *;`;
 
-        return await db.sendQuery(queryString);
+        const query = {
+            text: queryString,
+        };
+
+        return await db.sendQuery(query);
     }
 }
 

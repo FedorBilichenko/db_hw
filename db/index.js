@@ -11,12 +11,20 @@ class Db {
         })
     }
 
-    async sendQuery(query, values=[]) {
+    async sendQuery(query) {
         const client = await this.pool.connect();
-        const result = await client.query(query, values);
+        const response = {};
 
-        client.release();
-        return result;
+        try {
+            const result = await client.query(query);
+            response.data = result.rows;
+        } catch (e) {
+            response.error = e;
+        } finally {
+            client.release();
+        }
+
+        return response;
     }
 }
 

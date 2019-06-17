@@ -72,12 +72,6 @@ class ThreadHandler {
             }
             const { nickname } = curAuthorResult.rows[0];
 
-/*            let curCreated;
-            if (!('created' in post)) {
-                curCreated = new Date().toISOString();
-            } else {
-                curCreated = post.created;
-            }*/
             const nextId = await CommonQueries.getNextId();
             const { nextval: id } = nextId.rows[0];
             path.push(+id);
@@ -107,8 +101,6 @@ class ThreadHandler {
                     }
                 })
             }
-            /*const { created } = curPostResult.rows[0];
-            curPostResult.rows[0].created = new Date(created);*/
 
             resultArrPosts.push({
                 ...curPostResult.rows[0],

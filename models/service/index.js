@@ -4,11 +4,17 @@ const queryList = require('./queryList');
 
 class ServiceModel {
     async status() {
-        return await db.sendQuery(queryList.status);
+        const query = {
+            text: queryList.status,
+        };
+        return await db.sendQuery(query);
     }
 
     async clear() {
-        return await db.sendQuery(queryList.clear);
+        const query = {
+            text: queryList.clear,
+        };
+        return await db.sendQuery(query);
     }
 }
 

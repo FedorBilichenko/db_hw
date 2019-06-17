@@ -16,7 +16,11 @@ class PostModel {
                             VALUES (${values.join(', ')})
                             RETURNING *;`;
 
-        return await db.sendQuery(queryString);
+        const query = {
+            text: queryString,
+        };
+
+        return await db.sendQuery(query);
     }
 
     async get(data) {
@@ -25,12 +29,20 @@ class PostModel {
 
         const queryString = `SELECT * FROM posts
                              WHERE ${selectors.join('')}`;
-
-        return await db.sendQuery(queryString);
+        const query = {
+            text: queryString,
+        };
+        return await db.sendQuery(query);
     }
 
     async update({message, id}) {
-        return await db.sendQuery(queryList.updatePost, [message, id])
+        const query = {
+            name: 'update_post',
+            text: queryList.updatePost,
+            values: [message, id]
+        };
+
+        return await db.sendQuery(query)
     }
 
 }

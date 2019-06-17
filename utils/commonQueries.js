@@ -5,12 +5,24 @@ const queryList = require('./queryList');
 class CommonQueries {
     async selectUserForum({data}) {
         const { user, forum } = data;
-        return await db.sendQuery(queryList.getUserForum, [user, forum])
+        const query = {
+            text: queryList.getUserForum,
+            values: [user, forum],
+            name: 'get_user_forum'
+        };
+
+        return await db.sendQuery(query)
     }
 
     async insertUserForum({data}) {
         const { user, forum } = data;
-        return await db.sendQuery(queryList.insertUserForum, [user, forum])
+        const query = {
+            text: queryList.insertUserForum,
+            values: [user, forum],
+            name: 'insert_user_forum'
+        };
+
+        return await db.sendQuery(query)
     }
 
     async getForumUsers({data, sortData={}, operator}) {
@@ -35,11 +47,19 @@ class CommonQueries {
                              SELECT "user" FROM users_forums
                              WHERE ${selectors.join('')})
                              ${sinceCondition} ORDER BY nickname COLLATE "C" ${descCondition} ${limitCondition}`;
-        return await db.sendQuery(queryString);
+
+        const query = {
+            text: queryString,
+        };
+
+        return await db.sendQuery(query);
     }
 
     async getNextId() {
-        return await db.sendQuery(queryList.selectNextIds)
+        const query = {
+            text: queryList.selectNextIds,
+        };
+        return await db.sendQuery(query)
     }
 
     async getPostsThread({data, sortData={}}) {
@@ -148,7 +168,13 @@ class CommonQueries {
             }
         }
         queryString += sortTypeCondition;
-        return await db.sendQuery(queryString, values);
+
+        const query = {
+            text: queryString,
+            values: values,
+        };
+
+        return await db.sendQuery(query);
     }
 }
 
