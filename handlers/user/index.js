@@ -9,65 +9,55 @@ class UserHandler {
              about
          } = req.body;
 
-         const curUsersResult = await UserModel.getProfile({
-             data: {nickname: nickname, email: email},
-             operator: 'OR'
+         const { data: curUsersResult } = await UserModel.getUserByNickEmail({
+             nickname,
+             email
          });
 
-         if (curUsersResult.rowCount !== 0) {
+         if (curUsersResult.length !== 0) {
              res
                  .code(409)
-                 .send(curUsersResult.rows);
+                 .send(curUsersResult);
              return;
          }
 
-         await UserModel.create({
-             nickname: nickname,
-             email: email,
-             fullname: fullname,
-             about: about,
+         const { data: createdUser } = await UserModel.create({
+             nickname,
+             email,
+             fullname,
+             about,
          });
+
          res
              .code(201)
-             .send({
-                 nickname: nickname,
-                 email: email,
-                 fullname: fullname,
-                 about: about,
-             });
-     }
+             .send(createdUser);
+    }
+
     async get(req, res) {
         let { nickname } = req.params;
 
-        const userProfileResult = await UserModel.getProfile({
-            data: {nickname: nickname}
+        const { data: foundUser }= await UserModel.getProfile({
+            data: {nickname}
         });
-        if (userProfileResult.rowCount === 0) {
+        if (foundUser.length === 0) {
             res
                 .code(404)
-                .send({message: `Can't fins user with nickname ${nickname}`});
+                .send({message: `Can't find user with nickname ${nickname}`});
             return;
         }
 
-        const { nickname: userNickname, email, fullname, about } = userProfileResult.rows[0];
-
         res
             .code(200)
-            .send({
-                nickname: userNickname,
-                email: email,
-                fullname: fullname,
-                about: about,
-            })
+            .send(foundUser[0])
     }
     async update(req, res) {
         const { nickname } = req.params;
 
-        const curUserResult = await UserModel.getProfile({
+        const { data: curUserResult } = await UserModel.getProfile({
             data: {nickname: nickname}
         });
 
-        if (curUserResult.rowCount === 0) {
+        if (curUserResult.length === 0) {
             res
                 .code(404)
                 .send({message: `Can't find user with nickname ${nickname}`});
@@ -76,11 +66,11 @@ class UserHandler {
 
         if ('email' in req.body) {
             const { email } = req.body;
-            const curEmailUser = await UserModel.getProfile({
+            const { data: curEmailUser }= await UserModel.getProfile({
                 data: {email: email}
             });
 
-            if ( curEmailUser.rowCount !== 0) {
+            if (curEmailUser.length !== 0) {
                 res
                     .code(409)
                     .send({message: `User with email ${email} is already signed up`});
@@ -91,7 +81,7 @@ class UserHandler {
         if (Object.keys(req.body).length === 0) {
             res
                 .code(200)
-                .send(curUserResult.rows[0]);
+                .send(curUserResult[0]);
             return;
         }
 
@@ -100,7 +90,7 @@ class UserHandler {
         res
         .code(200)
         .send({
-            ...curUserResult.rows[0],
+            ...curUserResult[0],
             ...req.body
         })
     }

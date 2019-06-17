@@ -44,7 +44,7 @@ class UserModel {
         const queryString = `SELECT * FROM "users"
                              WHERE ${selectors.join('')}
                              ${sinceCondition} ORDER BY nickname ${descCondition} ${limitCondition}`;
-        // console.log((await db.sendQuery('SELECT * FROM pg_catalog.pg_tables;')).rows);
+
         const query = {
             text: queryString,
         };
