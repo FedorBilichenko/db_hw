@@ -124,7 +124,7 @@ class ForumHandler {
         }
         const { slug } = curForumResult[0];
 
-        const forumUsersResult = await CommonQueries.getForumUsers({
+        const { data: forumUsersResult }= await CommonQueries.getForumUsers({
             data: {
                 forum: slug
             },

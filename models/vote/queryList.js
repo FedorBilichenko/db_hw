@@ -1,10 +1,22 @@
 module.exports = {
-  insertVote: `INSERT INTO votes ("user", thread, voice)
-               VALUES ($1, $2, $3)
-               RETURNING *;`,
-  updateVote: `UPDATE votes
-               SET voice=$1
-               WHERE "user"=$2 AND thread=$3;`,
+  updateVote: `INSERT INTO votes
+              VALUES (
+              $1, (
+              SELECT id
+              FROM threads
+              WHERE id=$2 OR slug=$2
+              LIMIT 1
+              ), $3
+              )
+              ON CONFLICT ("user", thread)
+              DO UPDATE SET vote=$3
+              RETURNING *
+      `,
   selectVote: `SELECT * FROM votes
-               WHERE "user"=$1 AND thread=$2;`,
+               WHERE "user"=$1
+               AND thread=(
+               SELECT id
+               FROM threads
+               WHERE id=$2 OR slug=$2
+               LIMIT 1)`,
 };

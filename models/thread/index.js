@@ -52,11 +52,11 @@ class ThreadModel {
         return await db.sendQuery(query);
     };
 
-    async vote({id, voice}) {
+    async vote({id: slugOrId, voice}) {
         const query = {
             name: 'vote_thread',
             text: queryList.updateVote,
-            values: [voice, id],
+            values: [voice, slugOrId],
         };
         return await db.sendQuery(query);
     }

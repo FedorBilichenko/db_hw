@@ -35,6 +35,9 @@ CREATE TABLE IF NOT EXISTS threads (
   votes INT DEFAULT 0
 );
 
+CREATE UNIQUE INDEX index_on_threads_slug
+  ON threads (slug);
+
 CREATE TABLE IF NOT EXISTS users_forums (
   "user" CITEXT NOT NULL,
   forum CITEXT NOT NULL
@@ -68,8 +71,7 @@ CREATE TRIGGER new_thread AFTER INSERT ON threads
 
 -- CREATE INDEX index_on_forums_slug ON forums(slug);
 
-CREATE UNIQUE INDEX index_on_threads_slug
-  ON threads (slug);
+
 
 CREATE INDEX index_on_threads_id ON threads(id);
 CREATE INDEX index_on_threads_forum ON threads(forum);
@@ -92,7 +94,8 @@ CREATE INDEX index_on_posts_id_thread ON posts (id, thread);
 CREATE TABLE IF NOT EXISTS votes (
   "user" CITEXT NOT NULL REFERENCES "users" (nickname),
   thread INT NOT NULL REFERENCES threads (id),
-  voice INT NOT NULL DEFAULT 0
+  vote INT NOT NULL DEFAULT 0,
+  PRIMARY KEY ("user", thread)
 );
 
 CREATE INDEX index_on_votes_user_thread

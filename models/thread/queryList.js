@@ -3,7 +3,7 @@ module.exports = {
                           WHERE id=$1 OR slug=$2;`,
     updateVote: `UPDATE threads
                  SET votes=votes+$1
-                 WHERE id=$2
+                 WHERE id=$2 OR slug=$2
                  RETURNING *;`,
 
 };

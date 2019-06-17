@@ -64,56 +64,39 @@ class ThreadHandler {
     }
 
     async vote(req, res) {
-        const { slug_or_id: reqSlugOrId } = req.params;
-        const { nickname, voice } = req.body;
+        const { slug_or_id: slugOrId} = req.params;
+        let { nickname, voice } = req.body;
 
-        let curThreadResult;
-        if (isNumber(reqSlugOrId)) {
-            curThreadResult = await ThreadModel.get({
-                data: {id: reqSlugOrId, slug: reqSlugOrId},
-                operator: 'OR',
-            });
-        } else {
-            curThreadResult = await ThreadModel.get({
-                data: {slug: reqSlugOrId},
-            });
+        const { data: curVoteResult }= await VoteModel.get({user: nickname, slugOrId});
+        const { error } = await VoteModel.addOrUpdate({user: nickname, voice, slugOrId});
+
+        if (error) {
+            if (error.code === '23502') {
+                res
+                    .code(404)
+                    .send({message: `Can't find thread with id or slug ${slugOrId}`})
+                return;
+            }
+            if (error.code === '23503') {
+                res
+                    .code(404)
+                    .send({message: `Can't find user with nickname ${nickname}`});
+                return;
+            }
         }
 
-        if (curThreadResult.rowCount === 0) {
-            res
-                .code(404)
-                .send({message: `Can't find thread with slug or id ${reqSlugOrId}`});
-            return;
+        console.log('finalThread', curVoteResult[0]);
+
+        if (curVoteResult.length !== 0) {
+            voice -= curVoteResult[0].vote;
         }
 
-        const curAuthorResult = await UserModel.getProfile({
-            data: {nickname: nickname}
-        });
 
-        if (curAuthorResult.rowCount === 0) {
-            res
-                .code(404)
-                .send({message: `Can't find user with nickname ${nickname}`});
-            return;
-        }
-
-        const { id } = curThreadResult.rows[0];
-
-        const curVoteResult = await VoteModel.get({user: nickname, thread: id});
-        let resultVote = voice;
-
-        if (curVoteResult.rowCount !== 0) {
-            await VoteModel.update({user: nickname, voice: voice, thread: id});
-            resultVote -= curVoteResult.rows[0].voice;
-        } else {
-            await VoteModel.create({user: nickname, voice: voice, thread: id});
-        }
-
-        const finalThread = await ThreadModel.vote({id: id, voice: resultVote});
-
+        const { data: finalThread } = await ThreadModel.vote({slugOrId, voice: voice});
+        console.log('finalThread', finalThread[0]);
         res
             .code(200)
-            .send(finalThread.rows[0]);
+            .send(finalThread[0]);
     }
 
     async getDetails(req, res) {
@@ -140,7 +123,7 @@ class ThreadHandler {
 
         res
             .code(200)
-            .send(curThreadResult[0])
+            .send(curThreadResult.data[0])
     }
 
     async update(req, res) {
@@ -197,15 +180,15 @@ class ThreadHandler {
             });
         }
 
-        if (curThreadResult.rowCount === 0) {
+        if (curThreadResult.data.length === 0) {
             res
                 .code(404)
                 .send({message: `Can't find thread with slug or id ${reqSlugOrId}`});
             return;
         }
-        const { id: thread } = curThreadResult.rows[0];
+        const { id: thread } = curThreadResult.data[0];
 
-        const postsResult = await CommonQueries.getPostsThread({
+        const {data: postsResult}= await CommonQueries.getPostsThread({
             data: {
                 thread: thread
             },
@@ -214,7 +197,7 @@ class ThreadHandler {
 
         res
             .code(200)
-            .send(postsResult.rows)
+            .send(postsResult)
     }
 }
 

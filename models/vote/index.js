@@ -3,21 +3,11 @@ const queryList = require('./queryList');
 
 
 class VoteModel {
-    async create({user, thread, voice}) {
-        const query = {
-            name: 'create_vote',
-            text: queryList.insertVote,
-            values: [user, thread, voice],
-        };
-
-        return await db.sendQuery(query);
-    }
-
-    async update({user, thread, voice}) {
+    async addOrUpdate({user, slugOrId, voice}) {
         const query = {
             name: 'update_vote',
             text: queryList.updateVote,
-            values: [voice, user, thread],
+            values: [user, slugOrId, voice],
         };
 
         return await db.sendQuery(query);
