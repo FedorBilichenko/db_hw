@@ -7,46 +7,38 @@ class ForumHandler {
     async create(req, res) {
         const {
             slug,
-            user: reqUser,
+            user,
             title
         } = req.body;
 
-        const curUserResult = await UserModel.getProfile({
-            data: {nickname: reqUser}
-        });
+        const { error, data: newForumResult }= await ForumModel.create({slug, user, title});
 
-        if (curUserResult.rowCount === 0) {
+        if (error.code === '23502') {
             res
                 .code(404)
-                .send({message: `Can't fins user with nickname ${reqUser}`});
+                .send({message: `Can't find user with nickname ${user}`});
             return;
         }
-
-        const { nickname: user } = curUserResult.rows[0];
-
-        const curForumResult = await ForumModel.get({slug: slug});
-
-        if (curForumResult.rowCount !== 0) {
+        if (error.code === '23505') {
+            const { data: foundForum } = await ForumModel.get({slug});
 
             res
                 .code(409)
-                .send(curForumResult.rows[0]);
+                .send(foundForum[0]);
             return;
         }
 
-        const newForumResult = await ForumModel.create({slug: slug, user: user, title: title});
-
         res
             .code(201)
-            .send(newForumResult.rows[0])
+            .send(newForumResult[0])
     }
 
     async getDetails(req, res) {
         const { slug } = req.params;
 
-        const forumResult = await ForumModel.get({slug: slug});
+        const forumResult = await ForumModel.get({slug});
 
-        if (forumResult.rowCount === 0) {
+        if (forumResult.length === 0) {
             res
                 .code(404)
                 .send({message: `Can't find forum with slug ${slug}`});
@@ -55,7 +47,7 @@ class ForumHandler {
 
         res
             .code(200)
-            .send(forumResult.rows[0])
+            .send(forumResult[0])
     }
 
     async createThread(req, res) {
@@ -163,15 +155,15 @@ class ForumHandler {
     async getUsers(req, res) {
         const { slug: reqSLug } = req.params;
 
-        const curForumResult = await ForumModel.get({slug: reqSLug});
+        const { data: curForumResult } = await ForumModel.get({slug: reqSLug});
 
-        if (curForumResult.rowCount === 0) {
+        if (curForumResult.length === 0) {
             res
                 .code(404)
                 .send({message: `Can't find forum with slug ${reqSLug}`});
             return;
         }
-        const { slug } = curForumResult.rows[0];
+        const { slug } = curForumResult[0];
 
         const forumUsersResult = await CommonQueries.getForumUsers({
             data: {
@@ -183,7 +175,7 @@ class ForumHandler {
 
         res
             .code(200)
-            .send(forumUsersResult.rows)
+            .send(forumUsersResult)
 
     }
 }

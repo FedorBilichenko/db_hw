@@ -20,7 +20,7 @@ class ForumModel {
         const { slug, user, title } = data;
         const query = {
             text: queryList.insertForum,
-            values: [slug, user, title],
+            values: [slug, title, user],
             name: 'forum_create',
         };
 

@@ -10,11 +10,11 @@ CREATE TABLE IF NOT EXISTS "users" (
 CREATE UNIQUE INDEX index_on_users_nickname
   ON "users" (nickname COLLATE "C");
 
-CREATE INDEX index_on_users_nickname_email
+/*CREATE INDEX index_on_users_nickname_email
   ON "users" (nickname, email);
 
 CREATE INDEX index_on_users_email
-  ON "users" (email);
+  ON "users" (email);*/
 
 CREATE TABLE IF NOT EXISTS forums (
   slug CITEXT NOT NULL PRIMARY KEY,
