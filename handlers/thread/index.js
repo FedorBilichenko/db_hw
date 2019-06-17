@@ -11,7 +11,6 @@ class ThreadHandler {
     async createPosts(req, res) {
         const { slug_or_id: reqSlugOrId } = req.params;
         const posts = req.body;
-        const resultArrPosts = [];
 
         let curThreadResult;
         if (isNumber(reqSlugOrId)) {
@@ -25,7 +24,7 @@ class ThreadHandler {
             });
         }
 
-        if (curThreadResult.rowCount === 0) {
+        if (curThreadResult.data.length === 0) {
             res
                 .code(404)
                 .send({message: `Can't find thread with slug or id ${reqSlugOrId}`});
@@ -39,81 +38,31 @@ class ThreadHandler {
             return;
         }
 
-        const {id: threadId, forum: forumSlug} = curThreadResult.rows[0];
+        const {id: threadId, forum: forumSlug} = curThreadResult.data[0];
 
-        const sameTime = new Date().toISOString();
+        const { error, data: createdPosts } = await PostsModel.createPosts({posts, forum: forumSlug, threadId});
 
-        for (let i = 0; i < posts.length; i++) {
-            let post = posts[i];
-            const { parent, author } = post;
-            let path = [];
+        console.log(createdPosts);
 
-            if (('parent' in post) && (parent !== 0 )) {
-                const parentResult = await PostsModel.get({id: parent, thread: threadId});
-
-                if (parentResult.rowCount === 0) {
-                    res
-                        .code(409)
-                        .send({message: `Can't find parent post with id ${parent} into thread with id ${threadId}`});
-                    return;
-                }
-                path = parentResult.rows[0].path;
-            }
-
-            const curAuthorResult = await UserModel.getProfile({
-                data: {nickname: author}
-            });
-
-            if ( curAuthorResult.rowCount === 0 ) {
+        if (error) {
+            if (error.code === '23502') {
                 res
-                    .code(404)
-                    .send({message: `Can't find post author by nickname: ${author}`});
+                    .code(409)
+                    .send({message: `Can't find parent`});
                 return;
             }
-            const { nickname } = curAuthorResult.rows[0];
 
-            const nextId = await CommonQueries.getNextId();
-            const { nextval: id } = nextId.rows[0];
-            path.push(+id);
-
-            const curPostResult = await PostsModel.create({
-                ...post,
-                ...{
-                    id: id,
-                    thread: threadId,
-                    forum: forumSlug,
-                    created: sameTime,
-                    path: path,
-                }
-            });
-
-            const curUserForumResult = await CommonQueries.selectUserForum({
-                data: {
-                    user: nickname,
-                    forum: forumSlug
-                }
-            });
-            if (curUserForumResult.rowCount === 0) {
-                await CommonQueries.insertUserForum({
-                    data: {
-                        user: nickname,
-                        forum: forumSlug
-                    }
-                })
+            if (error.code === '23503') {
+                res
+                    .code(404)
+                    .send({message: `Can't find profile`});
+                return;
             }
-
-            resultArrPosts.push({
-                ...curPostResult.rows[0],
-            });
-
         }
-
-        await ForumModel.update({posts: posts.length}, forumSlug);
 
         res
             .code(201)
-            .type('application/json')
-            .send(resultArrPosts)
+            .send(createdPosts)
     }
 
     async vote(req, res) {
@@ -184,7 +133,7 @@ class ThreadHandler {
             });
         }
 
-        if (curThreadResult.rowCount === 0) {
+        if (curThreadResult.data.length === 0) {
             res
                 .code(404)
                 .send({message: `Can't find thread with slug or id ${reqSlugOrId}`});

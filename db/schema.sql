@@ -75,7 +75,7 @@ CREATE INDEX index_on_threads_id ON threads(id);
 CREATE INDEX index_on_threads_forum ON threads(forum);
 
 CREATE TABLE IF NOT EXISTS posts (
-  id SERIAL PRIMARY KEY,
+  id SERIAL NOT NULL PRIMARY KEY,
   parent INT NOT NULL DEFAULT 0,
   author CITEXT NOT NULL REFERENCES "users" (nickname),
   created timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS posts (
   "isEdited" BOOLEAN NOT NULL DEFAULT FALSE,
   message TEXT NOT NULL,
   thread INT NOT NULL,
-  path INTEGER[]
+  path INTEGER[] NOT NULL
 );
 
 CREATE INDEX index_on_posts_id ON posts (id);

@@ -8,7 +8,9 @@ class Db {
             database: 'postgres',
             password: 'Klass575428',
             port: 5432,
-        })
+        });
+
+        this.UserForumSet = new Set();
     }
 
     async sendQuery(query) {

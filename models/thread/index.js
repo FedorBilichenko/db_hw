@@ -5,6 +5,7 @@ const queryList = require('./queryList');
 class ThreadModel {
     async create(data) {
         const values = [];
+        db.UserForumSet.add(data.forum + data.author);
         const columns = Object.keys(data).map((key, idx, array) => {
             if (key === 'forum') {
                 values.push(`(SELECT slug FROM forums WHERE slug = '${data[key]}')`);
