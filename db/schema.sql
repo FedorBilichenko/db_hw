@@ -24,10 +24,8 @@ CREATE TABLE IF NOT EXISTS forums (
   threads INT NOT NULL DEFAULT 0
 );
 
-CREATE INDEX index_on_forums_slug ON forums(slug);
-
 CREATE TABLE IF NOT EXISTS threads (
-  id SERIAL PRIMARY KEY,
+  id SERIAL NOT NULL PRIMARY KEY,
   slug CITEXT DEFAULT NULL,
   author CITEXT NOT NULL REFERENCES "users" (nickname),
   created timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -36,6 +34,39 @@ CREATE TABLE IF NOT EXISTS threads (
   title TEXT NOT NULL,
   votes INT DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS users_forums (
+  "user" CITEXT NOT NULL,
+  forum CITEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX index_on_user_posts
+  ON users_forums("user", forum);
+
+CREATE FUNCTION new_thread() RETURNS trigger AS $new_thread$
+  BEGIN
+    UPDATE forums
+    SET threads = threads + 1
+    WHERE slug = NEW.forum;
+
+    INSERT INTO users_forums ("user", forum)
+    SELECT NEW.author, NEW.forum
+    WHERE NOT EXISTS (
+                SELECT 1
+                FROM users_forums
+                WHERE "user" = NEW.author
+                  AND forum = NEW.forum
+                LIMIT 1
+        );
+
+    RETURN NEW;
+  END;
+$new_thread$ LANGUAGE plpgsql;
+
+CREATE TRIGGER new_thread AFTER INSERT ON threads
+  FOR EACH ROW EXECUTE PROCEDURE new_thread();
+
+-- CREATE INDEX index_on_forums_slug ON forums(slug);
 
 CREATE UNIQUE INDEX index_on_threads_slug
   ON threads (slug);
@@ -66,11 +97,3 @@ CREATE TABLE IF NOT EXISTS votes (
 
 CREATE INDEX index_on_votes_user_thread
   ON votes ("user", thread);
-
-CREATE TABLE IF NOT EXISTS users_forums (
-  "user" CITEXT NOT NULL,
-  forum CITEXT NOT NULL
-);
-
-CREATE UNIQUE INDEX index_on_user_posts
-  ON users_forums("user", forum);

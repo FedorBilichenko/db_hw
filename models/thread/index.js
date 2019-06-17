@@ -6,7 +6,11 @@ class ThreadModel {
     async create(data) {
         const values = [];
         const columns = Object.keys(data).map((key, idx, array) => {
-            values.push(`'${data[key]}'`);
+            if (key === 'forum') {
+                values.push(`(SELECT slug FROM forums WHERE slug = '${data[key]}')`);
+            } else {
+                values.push(`'${data[key]}'`);
+            }
             return idx === (array.length - 1) ? `${key}` : `${key}, `
         });
         const queryString = `INSERT INTO threads (${columns.join('')})
@@ -15,7 +19,6 @@ class ThreadModel {
         const query = {
             text: queryString,
         };
-
         return await db.sendQuery(query);
     }
 

@@ -1,5 +1,4 @@
 const ForumModel = require('../../models/forum');
-const UserModel = require('../../models/user');
 const ThreadModel = require('../../models/thread');
 const CommonQueries = require('../../utils/commonQueries');
 
@@ -11,21 +10,22 @@ class ForumHandler {
             title
         } = req.body;
 
-        const { error, data: newForumResult }= await ForumModel.create({slug, user, title});
+        const { error=null, data: newForumResult }= await ForumModel.create({slug, user, title});
+        if (error) {
+            if (error.code === '23502') {
+                res
+                    .code(404)
+                    .send({message: `Can't find user with nickname ${user}`});
+                return;
+            }
+            if (error.code === '23505') {
+                const { data: foundForum } = await ForumModel.get({slug});
 
-        if (error.code === '23502') {
-            res
-                .code(404)
-                .send({message: `Can't find user with nickname ${user}`});
-            return;
-        }
-        if (error.code === '23505') {
-            const { data: foundForum } = await ForumModel.get({slug});
-
-            res
-                .code(409)
-                .send(foundForum[0]);
-            return;
+                res
+                    .code(409)
+                    .send(foundForum[0]);
+                return;
+            }
         }
 
         res
@@ -36,7 +36,7 @@ class ForumHandler {
     async getDetails(req, res) {
         const { slug } = req.params;
 
-        const forumResult = await ForumModel.get({slug});
+        const { data: forumResult }= await ForumModel.get({slug});
 
         if (forumResult.length === 0) {
             res
@@ -51,97 +51,56 @@ class ForumHandler {
     }
 
     async createThread(req, res) {
-        const { slug: reqSlugForum } = req.params;
-        const { author: reqAuthor } = req.body;
-
-        const curAuthorResult = await UserModel.getProfile({
-            data: {nickname: reqAuthor}
+        const { error, data: newThreadResult } = await ThreadModel.create({
+            ...req.body,
+            ...{
+                forum: req.params.slug,
+            }
         });
-        const curForumResult = await ForumModel.get({slug: reqSlugForum});
 
-        if (curForumResult.rowCount === 0 || curAuthorResult.rowCount === 0) {
-            res
-                .code(404)
-                .send({message: `Author or forum is not found`});
-            return;
-        }
-        const inputData = {};
+        if (error) {
+            if (error.code === '23502') {
+                res
+                    .code(404)
+                    .send({message: `Can't find forum with slug ${req.params.slug}`});
+                return;
+            }
 
-        if ('slug' in req.body) {
-            inputData['slug'] = req.body.slug;
-        }
-        if ('id' in req.body) {
-            inputData['id'] = req.body.id;
-        }
-        if (Object.keys(inputData).length !== 0) {
-            const curThreadResult = await ThreadModel.get({
-                data: inputData,
-                operator: 'OR'
-            });
+            if (error.code === '23503') {
+                res
+                    .code(404)
+                    .send({message: `Can't find user`});
+                return;
+            }
 
-            if ( curThreadResult.rowCount !== 0) {
+            if (error.code === '23505') {
+                const { data: foundThread } = await ThreadModel.get({data: {slug: req.body.slug}});
+
                 res
                     .code(409)
-                    .send(curThreadResult.rows[0]);
+                    .send(foundThread[0]);
                 return;
             }
         }
 
-        const { slug: curSlugForum } = curForumResult.rows[0];
-        const { nickname: curAuthor } = curAuthorResult.rows[0];
-
-        let curCreated;
-/*        if (!('created' in req.body)) {
-            curCreated = new Date().toISOString();
-        } else {
-            curCreated = req.body.created;
-        }*/
-
-        const newThreadResult = await ThreadModel.create({
-            ...req.body,
-            ...{
-                forum: curSlugForum,
-                author: curAuthor,
-                // created: curCreated,
-            }
-        });
-
-        await ForumModel.update({threads: 1}, curSlugForum);
-        const curUserForumResult = await CommonQueries.selectUserForum({
-            data: {
-                user: curAuthor,
-                forum: curSlugForum
-            }
-        });
-        if (curUserForumResult.rowCount === 0) {
-            await CommonQueries.insertUserForum({
-                data: {
-                    user: curAuthor,
-                    forum: curSlugForum
-                }
-            })
-        }
-        /*const { created } = newThreadResult.rows[0];
-        newThreadResult.rows[0].created = new Date(created);*/
         res
             .code(201)
-            .send(newThreadResult.rows[0]);
+            .send(newThreadResult[0]);
     }
 
     async getThreads(req, res) {
         const { slug: reqForumSLug } = req.params;
 
-        const curForumResult = await ForumModel.get({slug: reqForumSLug});
+        const { data: curForumResult } = await ForumModel.get({slug: reqForumSLug});
 
-
-        if (curForumResult.rowCount === 0) {
+        if (curForumResult.length === 0) {
             res
                 .code(404)
                 .send({message: `Can't find forum with slug ${reqForumSLug}`});
             return;
         }
 
-        const threadsResult = await ThreadModel.get({
+        const { data: threadsResult } = await ThreadModel.get({
             data: {forum: reqForumSLug},
             sortData: req.query,
             operator: 'AND'
@@ -149,7 +108,7 @@ class ForumHandler {
 
         res
             .code(200)
-            .send(threadsResult.rows)
+            .send(threadsResult)
     }
 
     async getUsers(req, res) {
