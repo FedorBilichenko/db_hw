@@ -2,13 +2,13 @@ const ServiceModel = require('../../models/service');
 
 class ServiceHandler {
     async getStatus(req, res) {
-        const statusResult = await ServiceModel.status();
+        const { data: statusResult } = await ServiceModel.status();
         const {
             forum,
             user,
             thread,
             post
-        } = statusResult.rows[0];
+        } = statusResult[0];
         res
             .code(200)
             .send({

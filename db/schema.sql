@@ -1,12 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS citext;
 
-DROP TABLE IF EXISTS users_forums;
-DROP TABLE IF EXISTS votes;
-DROP TABLE IF EXISTS posts;
-DROP TABLE IF EXISTS threads;
-DROP TABLE IF EXISTS forums;
-DROP TABLE IF EXISTS "users";
-
 CREATE TABLE IF NOT EXISTS "users" (
   nickname CITEXT NOT NULL,
   email CITEXT NOT NULL,
@@ -45,6 +38,26 @@ CREATE TABLE IF NOT EXISTS threads (
 CREATE UNIQUE INDEX index_on_threads_slug
   ON threads (slug);
 
+CREATE TABLE IF NOT EXISTS posts (
+  id SERIAL NOT NULL PRIMARY KEY,
+  parent INT NOT NULL DEFAULT 0,
+  root INT NOT NULL,
+  author CITEXT NOT NULL REFERENCES "users" (nickname),
+  created timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  forum CITEXT NOT NULL,
+  "isEdited" BOOLEAN NOT NULL DEFAULT FALSE,
+  message TEXT NOT NULL,
+  thread INT NOT NULL,
+  path INTEGER[] NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS votes (
+  "user" CITEXT NOT NULL REFERENCES "users" (nickname),
+  thread INT NOT NULL REFERENCES threads (id),
+  vote INT NOT NULL DEFAULT 0,
+  PRIMARY KEY ("user", thread)
+);
+
 CREATE TABLE IF NOT EXISTS users_forums (
   "user" CITEXT NOT NULL,
   forum CITEXT NOT NULL
@@ -52,6 +65,11 @@ CREATE TABLE IF NOT EXISTS users_forums (
 
 CREATE UNIQUE INDEX index_on_user_posts
   ON users_forums("user", forum);
+
+CREATE UNIQUE INDEX index_on_user_posts
+  ON users_forums(forum);
+
+DROP FUNCTION IF EXISTS new_thread;
 
 CREATE FUNCTION new_thread() RETURNS trigger AS $new_thread$
   BEGIN
@@ -76,34 +94,40 @@ $new_thread$ LANGUAGE plpgsql;
 CREATE TRIGGER new_thread AFTER INSERT ON threads
   FOR EACH ROW EXECUTE PROCEDURE new_thread();
 
+DROP FUNCTION IF EXISTS check_update_post;
+
+CREATE FUNCTION check_update_post() RETURNS trigger AS $check_update_post$
+BEGIN
+  IF OLD.message <> NEW.message THEN
+    NEW."isEdited" = true;
+  END IF;
+  RETURN NEW;
+END;
+$check_update_post$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_update_post BEFORE UPDATE ON posts
+  FOR EACH ROW EXECUTE PROCEDURE check_update_post();
+
 -- CREATE INDEX index_on_forums_slug ON forums(slug);
 
+CREATE INDEX index_on_posts_id_thread ON posts (thread, id);
 
+CREATE INDEX index_on_threads_forum_created ON threads(forum, created);
 
-CREATE INDEX index_on_threads_id ON threads(id);
-CREATE INDEX index_on_threads_forum ON threads(forum);
+DROP FUNCTION IF EXISTS new_post;
 
-CREATE TABLE IF NOT EXISTS posts (
-  id SERIAL NOT NULL PRIMARY KEY,
-  parent INT NOT NULL DEFAULT 0,
-  author CITEXT NOT NULL REFERENCES "users" (nickname),
-  created timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  forum CITEXT NOT NULL,
-  "isEdited" BOOLEAN NOT NULL DEFAULT FALSE,
-  message TEXT NOT NULL,
-  thread INT NOT NULL,
-  path INTEGER[] NOT NULL
-);
+CREATE FUNCTION new_post() RETURNS trigger AS $new_post$
+BEGIN
+  IF array_length(NEW.path, 1) > 0 THEN
+    NEW.root = NEW.path[1];
+  END IF;
 
-CREATE INDEX index_on_posts_id ON posts (id);
-CREATE INDEX index_on_posts_id_thread ON posts (id, thread);
+  RETURN NEW;
+END;
+$new_post$ LANGUAGE plpgsql;
 
-CREATE TABLE IF NOT EXISTS votes (
-  "user" CITEXT NOT NULL REFERENCES "users" (nickname),
-  thread INT NOT NULL REFERENCES threads (id),
-  vote INT NOT NULL DEFAULT 0,
-  PRIMARY KEY ("user", thread)
-);
+CREATE TRIGGER new_post BEFORE INSERT ON posts
+  FOR EACH ROW EXECUTE PROCEDURE new_post();
 
-CREATE INDEX index_on_votes_user_thread
-  ON votes ("user", thread);
+CREATE INDEX index_on_posts_root_path
+  ON posts (root, path);

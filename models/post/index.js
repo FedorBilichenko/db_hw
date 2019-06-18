@@ -74,12 +74,40 @@ class PostModel {
         return await db.sendQuery(query);
     }
 
-    async get(data) {
-        const selectors = Object.keys(data).map((key, idx, array) =>
-            `${key}='${data[key]}' ${idx !== (array.length - 1) ? 'AND ' : ''}`);
+    async get({id, related}) {
 
-        const queryString = `SELECT * FROM posts
-                             WHERE ${selectors.join('')}`;
+        const querySelect = related ? `posts.*
+            ${related.includes('user') ? ', "users".*' : ''}
+            ${related.includes('forum') ? ', forums.*' : ''}
+            ${related.includes('thread') ? `
+            , threads.id AS threadid
+            , threads.title AS threadtitle
+            , threads.author AS threadauthor
+            , threads.forum AS threadforum
+            , threads.message AS threadmessage
+            , threads.votes
+            , threads.slug AS threadslug
+            , threads.created AS threadcreated
+            ` : ''}
+            ` : 'posts.*';
+
+        const joins = related ? `
+              ${related.includes('user') ? `
+                LEFT JOIN "users" ON "users".nickname = posts.author
+              ` : ''}
+              ${related.includes('thread') ? `
+                LEFT JOIN threads ON threads.id = posts.thread
+              ` : ''}
+              ${related.includes('forum') ? `
+                LEFT JOIN forums ON forums.slug = posts.forum
+              ` : ''}
+            ` : '';
+
+        const queryString = `
+          SELECT ${querySelect} FROM posts
+          ${joins || ''}
+          WHERE posts.id=${id} LIMIT 1`;
+
         const query = {
             text: queryString,
         };

@@ -55,123 +55,102 @@ class CommonQueries {
         return await db.sendQuery(query);
     }
 
-    async getNextId() {
-        const query = {
-            text: queryList.selectNextIds,
-        };
-        return await db.sendQuery(query)
-    }
-
     async getPostsThread({data, sortData={}}) {
-        let sortTypeCondition='',
-            sinceCondition='',
-            descCondition='',
-            limitCondition='';
-        const { thread } = data;
-
-        const { sort } = sortData;
-        let queryString = `
-            SELECT P.*
-            FROM posts P
-        `;
-        const values = [];
-        values.push(thread);
+        let sinceCondition='';
+        const { slugOrId } = data;
+        const { limit=100, desc=null, since=null, sort=null } = sortData;
+        console.log(slugOrId, sortData);
+        let queryString ='';
         switch (sort) {
             case 'tree': {
-                if ('since' in sortData) {
-                    if ('desc' in sortData && sortData.desc === 'true') {
-                        sinceCondition =  `JOIN posts P1 ON P1.id = $2
-                                            WHERE P.thread=$1 AND P.path<P1.path`;
-                    } else {
-                        sinceCondition =  `JOIN posts P1 ON P1.id = $2
-                                            WHERE P.thread=$1 AND P.path>P1.path`;
-                    }
-                    values.push(sortData.since);
-                } else {
-                    sinceCondition = `WHERE P.thread=$1`;
+                if (since) {
+                    sinceCondition = `
+                    AND path ${desc === 'true' ? '<' : '>'} (
+                      SELECT path FROM posts
+                      WHERE id = '${since}'
+                    )
+                    `;
                 }
 
-                if ('desc' in sortData && sortData.desc === 'true') {
-                    descCondition = `ORDER BY P.path DESC`;
-                } else {
-                    descCondition = `ORDER BY P.path`;
-                }
-
-                if ('limit' in sortData) {
-                    if ('since' in sortData) {
-                        limitCondition = `LIMIT $3`;
-                    } else {
-                        limitCondition = `LIMIT $2`;
-                    }
-                    values.push(sortData.limit)
-                }
-                sortTypeCondition = ` ${sinceCondition} ${descCondition} ${limitCondition}`;
+                queryString = `
+                    SELECT *
+                    FROM posts
+                    WHERE thread = (
+                      SELECT id FROM threads
+                      WHERE ${Number.isInteger(Number(slugOrId)) ? 'id' : 'slug'} = '${slugOrId}'
+                      LIMIT 1
+                    )
+                    ${sinceCondition}
+                    ORDER BY path ${desc === 'true' ? 'DESC' : 'ASC'}
+                    LIMIT ${limit}
+                  `;
                 break;
             }
             case 'parent_tree': {
-                if ('since' in sortData) {
-                    if ('desc' in sortData && sortData.desc === 'true') {
-                        sinceCondition = `JOIN posts P2 ON P2.id = $2
-                                            WHERE P1.thread = $1 AND P1.parent = 0 AND P1.id < P2.path[1]`;
+                if (since) {
+                    if (desc === 'true') {
+                        sinceCondition = `
+                          AND path < (
+                            SELECT path[1:1] FROM posts
+                            WHERE id = '${since}'
+                          )`;
                     } else {
-                        sinceCondition = `JOIN posts P2 ON P2.id = $2
-                                            WHERE P1.thread = $1 AND P1.parent = 0 AND P1.id > P2.path[1]`;
+                        sinceCondition = `
+                        AND path > (
+                            SELECT path FROM posts
+                            WHERE id = '${since}'
+                          )`;
                     }
-                    values.push(sortData.since);
-                } else {
-                    sinceCondition = `WHERE P1.thread = $1 AND P1.parent = 0`;
                 }
-                if ('desc' in sortData && sortData.desc === 'true') {
-                    descCondition = `ORDER BY P1.id DESC`;
-                } else {
-                    descCondition = `ORDER BY P1.id`;
-                }
-                if ('limit' in sortData) {
-                    if ('since' in sortData) {
-                        limitCondition += `LIMIT $3`;
-                    } else {
-                        limitCondition += `LIMIT $2`;
-                    }
-                    values.push(sortData.limit);
-                }
-                sortTypeCondition = ` WHERE P.path[1] IN
-                (SELECT P1.id FROM posts P1
-                ${sinceCondition} 
-                ${descCondition}
-                ${limitCondition}
-                ${'desc' in sortData && sortData.desc === 'true' ? `) ORDER BY P.path[1] DESC, path` : `) ORDER BY P.path`}`;
+
+                queryString = `
+                    WITH parents AS (
+                      SELECT id FROM posts
+                      WHERE thread = (
+                        SELECT id FROM threads
+                        WHERE ${Number.isInteger(Number(slugOrId)) ? 'id' : 'slug'} = '${slugOrId}'
+                        LIMIT 1
+                      )
+                      AND parent = 0
+                      ${sinceCondition}
+                      ORDER BY id ${desc === 'true' ? 'DESC' : 'ASC'}
+                      LIMIT ${limit}
+                    )
+                    SELECT * FROM posts
+                    WHERE root IN (SELECT id FROM parents)
+                    ORDER BY
+                      root ${desc === 'true' ? 'DESC' : 'ASC'},
+                      path ASC
+                  `;
                 break;
             }
             default: {
-                if ('since' in sortData) {
-                    if ('desc' in sortData && sortData.desc === 'true') {
-                        sinceCondition = `AND P.id < $2`;
-                    } else {
-                        sinceCondition = `AND P.id > $2`;
-                    }
-                    values.push(sortData.since);
+                if (since) {
+                    sinceCondition = desc === 'true'
+                        ? `AND id < '${since}'`
+                        : `AND id > '${since}'`;
                 }
-                if ('desc' in sortData && sortData.desc === 'true') {
-                    descCondition = `ORDER BY P.id DESC`;
-                } else {
-                    descCondition = `ORDER BY P.id ASC`;
-                }
-                if ('limit' in sortData) {
-                    if ('since' in sortData) {
-                        limitCondition += `LIMIT $3`;
-                    } else {
-                        limitCondition += `LIMIT $2`;
-                    }
-                    values.push(sortData.limit);
-                }
-                sortTypeCondition =` WHERE P.thread = $1 ${sinceCondition} ${descCondition} ${limitCondition}`;
+                console.log('here', slugOrId, sort, limit);
+                queryString = `
+                    SELECT * FROM posts
+                    WHERE thread = (
+                      SELECT id FROM threads
+                      WHERE ${Number.isInteger(Number(slugOrId)) ? 'id' : 'slug'} = '${slugOrId}'
+                      LIMIT 1
+                    )
+                    ${sinceCondition}
+                    ORDER BY
+                      created ${desc === 'true' ? 'DESC' : 'ASC'},
+                      id ${desc === 'true' ? 'DESC' : 'ASC'}
+                    LIMIT ${limit}
+                  `;
             }
         }
-        queryString += sortTypeCondition;
+
+        console.log(queryString);
 
         const query = {
             text: queryString,
-            values: values,
         };
 
         return await db.sendQuery(query);

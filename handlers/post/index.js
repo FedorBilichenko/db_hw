@@ -1,127 +1,108 @@
-const ThreadModel = require('../../models/thread');
 const PostModel = require('../../models/post');
-const UserModel = require('../../models/user');
-const ForumModel = require('../../models/forum');
 
 class PostHandler {
     async getDetails(req, res) {
         const { id } = req.params;
-
-        const curPostResult = await PostModel.get({id: id});
-
-        if (curPostResult.rowCount === 0) {
-            res
-                .code(404)
-                .send({message: `Can't find post with id ${id}`});
-            return;
-        }
-
-        const { created, thread, author, forum } = curPostResult.rows[0];
-        // curPostResult.rows[0].created = new Date(created.toString());
-
-        const curThreadResult = await ThreadModel.get({
-            data: {id: thread}
-        });
-
-        if (curThreadResult.rowCount === 0) {
-            res
-                .code(404)
-                .send({message: `Can't find thread with id ${thread}`});
-            return;
-        }
-
-        if (!('related' in req.query)) {
-            res
-                .code(200)
-                .send({post: curPostResult.rows[0]});
-            return;
-        }
-        const finalResult = {};
-
         const { related } = req.query;
-        const arrRelated = related.split(',');
 
-        if (!Array.isArray(arrRelated)) {
-            if (arrRelated === 'user') {
-                const curAuthorResult = await UserModel.getProfile({
-                    data: {nickname: author}
-                });
-                finalResult['author'] = curAuthorResult.rows[0];
-            }
-            if (arrRelated === 'thread') {
-                finalResult['thread'] = curThreadResult.rows[0];
-            }
-            if (arrRelated === 'forum') {
-                const curForumResult = await ForumModel.get({slug: forum});
-                finalResult['forum'] = curForumResult.rows[0];
-            }
-        } else {
-            for (let i = 0; i < arrRelated.length; i++) {
-                if (arrRelated[i] === 'user') {
-                    const curAuthorResult = await UserModel.getProfile({
-                        data: {nickname: author}
-                    });
-                    finalResult['author'] = curAuthorResult.rows[0];
-                }
-                if (arrRelated[i] === 'thread') {
-                    finalResult['thread'] = curThreadResult.rows[0];
-                }
-                if (arrRelated[i] === 'forum') {
-                    const curForumResult = await ForumModel.get({slug: forum});
-                    finalResult['forum'] = curForumResult.rows[0];
-                }
-            }
+        const relatedArray = related ? related.split(',') : null;
+
+        const { data: foundPost = [] } = await PostModel.get({id, related: relatedArray});
+
+
+        if (foundPost.length === 0) {
+            res
+                .code(404)
+                .send({message: `Can't find post`});
+            return;
         }
 
-        finalResult.post = curPostResult.rows[0];
+        const post = {
+            id: foundPost[0].id,
+            parent: foundPost[0].parent,
+            root: foundPost[0].root,
+            author: foundPost[0].author,
+            message: foundPost[0].message,
+            path: foundPost[0].path,
+            isEdited: foundPost[0].isEdited,
+            forum: foundPost[0].forum,
+            thread: foundPost[0].thread,
+            created: foundPost[0].created,
+        };
+
+        let author = null;
+        if (related && related.includes('user')) {
+            author = {
+                nickname: foundPost[0].nickname,
+                email: foundPost[0].email,
+                fullname: foundPost[0].fullname,
+                about: foundPost[0].about,
+            };
+        }
+
+        let thread = null;
+        if (related && related.includes('thread')) {
+            thread = {
+                id: foundPost[0].threadid,
+                title: foundPost[0].threadtitle,
+                author: foundPost[0].threadauthor,
+                forum: foundPost[0].threadforum,
+                message: foundPost[0].threadmessage,
+                votes: foundPost[0].votes,
+                slug: foundPost[0].threadslug,
+                created: foundPost[0].threadcreated,
+            };
+        }
+
+        let forum = null;
+        if (related && related.includes('forum')) {
+            forum = {
+                title: foundPost[0].title,
+                slug: foundPost[0].slug,
+                user: foundPost[0].user,
+                posts: foundPost[0].posts,
+                threads: foundPost[0].threads,
+            };
+        }
+
+        const result = { post };
+        if (thread) result.thread = thread;
+        if (author) result.author = author;
+        if (forum) result.forum = forum;
 
         res
             .code(200)
-            .send(finalResult)
+            .send(result);
     }
 
     async edit(req, res) {
         const { id } = req.params;
-
-        const curPostResult = await PostModel.get({id: id});
-
-        if (curPostResult.rowCount === 0) {
-            res
-                .code(404)
-                .send({message: `Can't find post with id ${id}`});
-            return;
-        }
+        const { message } = req.body;
 
         if (!('message' in req.body)) {
+            const { data: curPostResult } = await PostModel.get({id});
+
             res
                 .code(200)
-                .send(curPostResult.rows[0]);
+                .send(curPostResult[0]);
             return;
         }
 
-        const { created, message: curPostMessage } = curPostResult.rows[0];
-        // curPostResult.rows[0].created = new Date(created.toString());
-        const { message: reqPostMessage } = req.body;
-
-
-        if (curPostMessage === reqPostMessage) {
-            res
-                .code(200)
-                .send(curPostResult.rows[0]);
-            return;
-        }
-
-        const updatePostResult = await PostModel.update({
-            message: reqPostMessage,
-            id: id,
+        const { data: updatePostResult } = await PostModel.update({
+            message,
+            id
         });
 
-        const { created: updatedCreated } = updatePostResult.rows[0];
-        // updatePostResult.rows[0].created = new Date(updatedCreated.toString());
+        if (updatePostResult.length === 0) {
+            res
+                .code(404)
+                .send({message: `Can't find post`});
+            return;
+        }
 
         res
             .code(200)
-            .send(updatePostResult.rows[0]);
+            .send(updatePostResult[0]);
     }
 }
 

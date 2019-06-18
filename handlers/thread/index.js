@@ -64,11 +64,8 @@ class ThreadHandler {
     async vote(req, res) {
         const { slug_or_id: slugOrId} = req.params;
         let { nickname, voice } = req.body;
-        console.log('here');
         const { data: curVoteResult, error: error1 } = await VoteModel.get({user: nickname, slugOrId});
-        console.log('here1');
         const { error } = await VoteModel.addOrUpdate({user: nickname, voice, slugOrId});
-        console.log('here2');
         if (error) {
             if (error.code === '23502') {
                 res
@@ -83,18 +80,12 @@ class ThreadHandler {
                 return;
             }
         }
-        console.log('here3');
-        console.log('finalThread error', error1);
-        console.log('finalThread', curVoteResult);
 
         if (curVoteResult.length !== 0) {
             voice -= curVoteResult[0].vote;
         }
-        console.log('here4');
 
         const { data: finalThread } = await ThreadModel.vote({slugOrId, voice});
-        console.log('finalThread', finalThread[0]);
-        console.log('here5');
         res
             .code(200)
             .send(finalThread[0]);
@@ -195,9 +186,7 @@ class ThreadHandler {
         const { id: thread } = curThreadResult.data[0];
 
         const {data: postsResult}= await CommonQueries.getPostsThread({
-            data: {
-                thread: thread
-            },
+            data: { slugOrId: reqSlugOrId },
             sortData: req.query,
         });
 
