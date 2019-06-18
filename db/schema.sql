@@ -41,14 +41,14 @@ CREATE UNIQUE INDEX index_on_threads_slug
 CREATE TABLE IF NOT EXISTS posts (
   id SERIAL NOT NULL PRIMARY KEY,
   parent INT NOT NULL DEFAULT 0,
-  root INT NOT NULL,
   author CITEXT NOT NULL REFERENCES "users" (nickname),
   created timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   forum CITEXT NOT NULL,
   "isEdited" BOOLEAN NOT NULL DEFAULT FALSE,
   message TEXT NOT NULL,
   thread INT NOT NULL,
-  path INTEGER[] NOT NULL
+  path INTEGER[] NOT NULL,
+  root INT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS votes (
@@ -73,17 +73,16 @@ DROP FUNCTION IF EXISTS new_thread;
 
 CREATE FUNCTION new_thread() RETURNS trigger AS $new_thread$
   BEGIN
-    UPDATE forums
-    SET threads = threads + 1
-    WHERE slug = NEW.forum;
+    UPDATE forums SET threads=threads+1
+    WHERE slug=NEW.forum;
 
     INSERT INTO users_forums ("user", forum)
     SELECT NEW.author, NEW.forum
     WHERE NOT EXISTS (
                 SELECT 1
                 FROM users_forums
-                WHERE "user" = NEW.author
-                  AND forum = NEW.forum
+                WHERE "user"=NEW.author
+                  AND forum=NEW.forum
                 LIMIT 1
         );
 
@@ -114,14 +113,11 @@ CREATE INDEX index_on_posts_id_thread ON posts (thread, id);
 
 CREATE INDEX index_on_threads_forum_created ON threads(forum, created);
 
-DROP FUNCTION IF EXISTS new_post;
-
 CREATE FUNCTION new_post() RETURNS trigger AS $new_post$
 BEGIN
-  IF array_length(NEW.path, 1) > 0 THEN
-    NEW.root = NEW.path[1];
+  IF array_length(NEW.path, 1)>0 THEN
+    NEW.root=NEW.path[1];
   END IF;
-
   RETURN NEW;
 END;
 $new_post$ LANGUAGE plpgsql;

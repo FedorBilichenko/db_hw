@@ -2,73 +2,74 @@ const PostModel = require('../../models/post');
 
 class PostHandler {
     async getDetails(req, res) {
-        const { id } = req.params;
+        const { id: postId } = req.params;
         const { related } = req.query;
 
-        const relatedArray = related ? related.split(',') : null;
+        const relatedSet = !!related ? new Set(related.split(',')): null;
+        const hasUser = !!relatedSet ? relatedSet.has('user') : false;
+        const hasThread = !!relatedSet ? relatedSet.has('thread') : false;
+        const hasForum = !!relatedSet ? relatedSet.has('forum') : false;
 
-        const { data: foundPost = [] } = await PostModel.get({id, related: relatedArray});
 
+        const { data: foundPost = [] } = await PostModel.get({id: postId, related: relatedSet});
 
         if (foundPost.length === 0) {
             res
                 .code(404)
-                .send({message: `Can't find post`});
+                .send({message: `Can't find post with id ${postId}`});
             return;
         }
-
-        const post = {
-            id: foundPost[0].id,
-            parent: foundPost[0].parent,
-            root: foundPost[0].root,
-            author: foundPost[0].author,
-            message: foundPost[0].message,
-            path: foundPost[0].path,
-            isEdited: foundPost[0].isEdited,
-            forum: foundPost[0].forum,
-            thread: foundPost[0].thread,
-            created: foundPost[0].created,
+        const data = foundPost[0];
+        const result = {
+            post: {
+                id: data.id,
+                parent: data.parent,
+                root: data.root,
+                author: data.author,
+                message: data.message,
+                path: data.path,
+                isEdited: data.isEdited,
+                forum: data.forum,
+                thread: data.thread,
+                created: data.created,
+            }
         };
 
-        let author = null;
-        if (related && related.includes('user')) {
-            author = {
-                nickname: foundPost[0].nickname,
-                email: foundPost[0].email,
-                fullname: foundPost[0].fullname,
-                about: foundPost[0].about,
-            };
+
+        if (related) {
+            if (hasUser)
+            {
+                result.author = {
+                    nickname: data.nickname,
+                    email: data.email,
+                    fullname: data.fullname,
+                    about: data.about,
+                };
+            }
+            if (hasThread) {
+                result.thread = {
+                    id: data.threadId,
+                    title: data.threadTitle,
+                    author: data.threadAuthor,
+                    forum: data.threadForum,
+                    message: data.threadMessage,
+                    votes: data.threadVotes,
+                    slug: data.threadSlug,
+                    created: data.threadCreated,
+                };
+            }
+
+            if (hasForum) {
+                result.forum = {
+                    title: data.title,
+                    slug: data.slug,
+                    user: data.user,
+                    posts: data.posts,
+                    threads: data.threads,
+                };
+            }
         }
 
-        let thread = null;
-        if (related && related.includes('thread')) {
-            thread = {
-                id: foundPost[0].threadid,
-                title: foundPost[0].threadtitle,
-                author: foundPost[0].threadauthor,
-                forum: foundPost[0].threadforum,
-                message: foundPost[0].threadmessage,
-                votes: foundPost[0].votes,
-                slug: foundPost[0].threadslug,
-                created: foundPost[0].threadcreated,
-            };
-        }
-
-        let forum = null;
-        if (related && related.includes('forum')) {
-            forum = {
-                title: foundPost[0].title,
-                slug: foundPost[0].slug,
-                user: foundPost[0].user,
-                posts: foundPost[0].posts,
-                threads: foundPost[0].threads,
-            };
-        }
-
-        const result = { post };
-        if (thread) result.thread = thread;
-        if (author) result.author = author;
-        if (forum) result.forum = forum;
 
         res
             .code(200)
@@ -96,7 +97,7 @@ class PostHandler {
         if (updatePostResult.length === 0) {
             res
                 .code(404)
-                .send({message: `Can't find post`});
+                .send({message: `Can't find post with id ${id}`});
             return;
         }
 

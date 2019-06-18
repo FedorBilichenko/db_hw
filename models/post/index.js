@@ -12,20 +12,19 @@ class PostModel {
             const post = posts[i];
 
             const parent = post.parent ?
-                `(SELECT id FROM posts
-                WHERE id = $${++counter}
-                AND thread = (SELECT id FROM thread)
-                LIMIT 1)` : `$${++counter}::integer`;
+                `(SELECT id FROM posts WHERE id = $${++counter}
+                AND thread = (SELECT id FROM thread) LIMIT 1)`
+                : `$${++counter}::integer`;
 
             queryValues += `(
-            (SELECT nextval('posts_id_seq')::integer),
-            ${parent},
-            (SELECT path FROM posts WHERE id = $${counter} LIMIT 1) ||
-            (SELECT currval('posts_id_seq')::integer),
-            $${++counter},
-            $${++counter},
-            (SELECT id FROM thread),
-            (SELECT forum FROM thread)), `;
+                        (SELECT nextval('posts_id_seq')::integer),
+                        ${parent},
+                        (SELECT path FROM posts WHERE id = $${counter} LIMIT 1) ||
+                        (SELECT currval('posts_id_seq')::integer),
+                        $${++counter},
+                        $${++counter},
+                        (SELECT id FROM thread),
+                        (SELECT forum FROM thread)), `;
 
             if (!db.UserForumSet.has(forum + post.author)) {
                 userForumValues += `(
@@ -39,31 +38,24 @@ class PostModel {
 
         queryValues = queryValues.slice(0, -2);
         userForumValues = userForumValues.slice(0, -2);
-        const columns = [
-            'id',
-            'parent',
-            'path',
-            'author',
-            'message',
-            'thread',
-            'forum',
-        ];
         const queryString = `
             WITH thread AS (
-                SELECT id, forum
-                FROM threads
-                WHERE id = $1
-                LIMIT 1
-                ), inc_posts AS (
-                UPDATE forums
-                SET posts = posts + ${posts.length}
-                WHERE slug = (SELECT forum from thread)
-                )${userForumValues ? `, ins_forum_users AS (
+                SELECT id, forum FROM threads WHERE id = $1 LIMIT 1),
+                increment AS (UPDATE forums SET posts = posts + ${posts.length}
+                WHERE slug = (SELECT forum from thread))
+                ${userForumValues ? `, user_forum_into_users_forums AS (
                 INSERT INTO users_forums ("user", forum)
-                VALUES ${userForumValues}
-                ON CONFLICT DO NOTHING
-                )` : ''}
-                INSERT INTO posts (${columns.join(', ')})
+                VALUES ${userForumValues} ON CONFLICT DO NOTHING)`
+                : ''}
+                INSERT INTO posts (${[
+                    'id',
+                    'parent',
+                    'path',
+                    'author',
+                    'message',
+                    'thread',
+                    'forum',
+                ].join(', ')})
                 VALUES ${queryValues} RETURNING *;`;
 
         const query = {
@@ -75,32 +67,29 @@ class PostModel {
     }
 
     async get({id, related}) {
+        const hasUser = !!related ? related.has('user') : false;
+        const hasForum = !!related ? related.has('forum') : false;
+        const hasThread = !!related ? related.has('thread') : false;
 
         const querySelect = related ? `posts.*
-            ${related.includes('user') ? ', "users".*' : ''}
-            ${related.includes('forum') ? ', forums.*' : ''}
-            ${related.includes('thread') ? `
-            , threads.id AS threadid
-            , threads.title AS threadtitle
-            , threads.author AS threadauthor
-            , threads.forum AS threadforum
-            , threads.message AS threadmessage
-            , threads.votes
-            , threads.slug AS threadslug
-            , threads.created AS threadcreated
-            ` : ''}
-            ` : 'posts.*';
+            ${hasUser ? ', "users".*' : ''}
+            ${hasForum ? ', forums.*' : ''}
+            ${hasThread ? `
+                , threads.id AS "threadId"
+                , threads.slug AS "threadSlug"
+                , threads.author AS "threadAuthor"
+                , threads.created AS "threadCreated"
+                , threads.forum AS "threadForum"
+                , threads.message AS "threadMessage"
+                , threads.title AS "threadTitle"
+                , threads.votes AS "threadVotes"
+                ` : ''}
+                ` : 'posts.*';
 
         const joins = related ? `
-              ${related.includes('user') ? `
-                LEFT JOIN "users" ON "users".nickname = posts.author
-              ` : ''}
-              ${related.includes('thread') ? `
-                LEFT JOIN threads ON threads.id = posts.thread
-              ` : ''}
-              ${related.includes('forum') ? `
-                LEFT JOIN forums ON forums.slug = posts.forum
-              ` : ''}
+              ${hasUser ? 'LEFT JOIN "users" ON "users".nickname=posts.author' : ''}
+              ${hasForum ? 'LEFT JOIN forums ON forums.slug = posts.forum' : ''}
+              ${hasThread ? 'LEFT JOIN threads ON threads.id=posts.thread' : ''}
             ` : '';
 
         const queryString = `
