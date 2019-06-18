@@ -1,5 +1,6 @@
 const db = require('../../db');
 const queryList = require('./queryList');
+const isNumber = require('isnumber-js');
 
 
 class ThreadModel {
@@ -55,7 +56,7 @@ class ThreadModel {
     async vote({slugOrId, voice}) {
         const query = {
             // name: 'vote_thread',
-            text: Number.isInteger(Number(slugOrId))
+            text: isNumber(slugOrId)
                 ? queryList.updateVoteById
                 : queryList.updateVoteBySlug,
             values: [voice, slugOrId],
@@ -69,7 +70,7 @@ class ThreadModel {
         );
         const queryString = `UPDATE threads
         SET ${selectors.join(', ')}
-        WHERE ${Number.isInteger(Number(reqSlugOrId)) ? 'id' : 'slug'}='${reqSlugOrId}'
+        WHERE ${isNumber(reqSlugOrId) ? 'id' : 'slug'}='${reqSlugOrId}'
         RETURNING *;`;
 
         const query = {

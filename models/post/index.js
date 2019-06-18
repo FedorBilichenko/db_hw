@@ -11,10 +11,10 @@ class PostModel {
         for (let i = 0; i < posts.length; i++) {
             const post = posts[i];
 
-            const parent = post.parent ?
-                `(SELECT id FROM posts WHERE id = $${++counter}
-                AND thread = (SELECT id FROM thread) LIMIT 1)`
-                : `$${++counter}::integer`;
+            const parent = post.parent ? `(SELECT id FROM posts
+            WHERE id = $${++counter}
+                AND thread = (SELECT id FROM thread)
+                LIMIT 1)` : `$${++counter}::integer`;
 
             queryValues += `(
                         (SELECT nextval('posts_id_seq')::integer),
@@ -40,13 +40,19 @@ class PostModel {
         userForumValues = userForumValues.slice(0, -2);
         const queryString = `
             WITH thread AS (
-                SELECT id, forum FROM threads WHERE id = $1 LIMIT 1),
-                increment AS (UPDATE forums SET posts = posts + ${posts.length}
-                WHERE slug = (SELECT forum from thread))
-                ${userForumValues ? `, user_forum_into_users_forums AS (
+                SELECT id, forum
+                FROM threads
+                WHERE id = $1
+                LIMIT 1
+                ), increment_posts AS (
+                UPDATE forums
+                SET posts = posts + ${posts.length}
+                WHERE slug = (SELECT forum from thread)
+                )${userForumValues ? `, user_forum_into_user_forums AS (
                 INSERT INTO users_forums ("user", forum)
-                VALUES ${userForumValues} ON CONFLICT DO NOTHING)`
-                : ''}
+                VALUES ${userForumValues}
+                ON CONFLICT DO NOTHING
+                )` : ''}
                 INSERT INTO posts (${[
                     'id',
                     'parent',
@@ -88,7 +94,7 @@ class PostModel {
 
         const joins = related ? `
               ${hasUser ? 'LEFT JOIN "users" ON "users".nickname=posts.author' : ''}
-              ${hasForum ? 'LEFT JOIN forums ON forums.slug = posts.forum' : ''}
+              ${hasForum ? 'LEFT JOIN forums ON forums.slug=posts.forum' : ''}
               ${hasThread ? 'LEFT JOIN threads ON threads.id=posts.thread' : ''}
             ` : '';
 

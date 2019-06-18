@@ -1,12 +1,13 @@
 const db = require('../../db');
 const queryList = require('./queryList');
+const isNumber = require('isnumber-js');
 
 
 class VoteModel {
     async addOrUpdate({user, slugOrId, voice}) {
         const query = {
             // name: 'update_vote',
-            text: Number.isInteger(Number(slugOrId))
+            text: isNumber(slugOrId)
                 ? queryList.updateVoteById
                 : queryList.updateVoteBySlug,
             values: [user, slugOrId, voice, voice],
@@ -18,7 +19,7 @@ class VoteModel {
     async get({user, slugOrId}) {
         const query = {
             // name: 'get_vote',
-            text: Number.isInteger(Number(slugOrId))
+            text: isNumber(slugOrId)
                 ? queryList.selectVoteById
                 : queryList.selectVoteBySlug,
             values: [user, slugOrId],
